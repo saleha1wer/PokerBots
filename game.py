@@ -3,6 +3,7 @@ from pokerface import Stakes, NoLimitShortDeckHoldEm
 import numpy as np
 import random
 from random_agent import RandomAgent
+from heuristic_agent import HeuristicAgent
 
 def play_round(players,stacks,game):
     # TODO: Check out button blinds
@@ -76,7 +77,9 @@ def play_round(players,stacks,game):
         if p.can_showdown():
             p.showdown()
         print(p)
-        new_stacks.append(p.stack)
+        if p.stack != 0:
+            new_stacks.append(p.stack)
+
     return new_stacks
 
 def play_game(n_rounds,players,game,starting_stacks,stakes):
@@ -86,12 +89,21 @@ def play_game(n_rounds,players,game,starting_stacks,stakes):
     for round in range(n_rounds):
         print('starting round ',round)
         stacks = play_round(players,stacks,game)
-        game = NoLimitShortDeckHoldEm(stakes,stacks)
-        for idx,player in enumerate(players):
-            if isinstance(player,RandomAgent):
-                players[idx] = RandomAgent(game)
-            # add if statements for other agents
-        print(stacks)
+        if len(stacks) > 1:
+            game = NoLimitShortDeckHoldEm(stakes,stacks)
+        new_players = []
+        for player in players:
+            if player.stack != 0:
+                if isinstance(player,RandomAgent):
+                    new_players.append(RandomAgent(game))
+                elif isinstance(player,HeuristicAgent):
+                    new_players.append(HeuristicAgent(game))
+
+        players = new_players
+        if len(players) == 1:
+            print('Winner :', type(players[0]))
+            break
+    
 
 """ 
 TODO:

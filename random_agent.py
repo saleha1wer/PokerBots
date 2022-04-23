@@ -23,10 +23,10 @@ class RandomAgent(PokerPlayer):
             f = np.random.choice(possible_actions)
             if f == self.bet_raise:
                 self.bet_raise(chips_raise)
-                print(f, chips_raise)
+                print('action: ',f.__name__, chips_raise)
             else:
                 f()
-                print(f)
+                print('action: ',f.__name__)
         else:
             # print("No possible actions")
             pass
