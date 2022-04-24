@@ -60,10 +60,8 @@ class HeuristicAgent(PokerPlayer):
         player_cards = self.hole
         pair = False
         for card in board:
-            if card.rank == player_cards[0].rank:
+            if card.rank == player_cards[0].rank or card.rank == player_cards[1].rank:
                 pair = True
-            elif card.rank == player_cards[1].rank:
-                pair = False
         return pair
 
     def get_lowest_card(self): 

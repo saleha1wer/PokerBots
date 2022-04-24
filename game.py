@@ -104,9 +104,3 @@ def play_game(n_rounds,players,game,starting_stacks,stakes):
             print('Winner :', type(players[0]))
             break
     
-
-""" 
-TODO:
-If players stack reaches 0, remove from game
-If only one player left, stop game and print winner
-"""
