@@ -28,7 +28,7 @@ class RandomAgent(PokerPlayer):
 
         if self.can_bet_raise():
             # Select a random possible raise value; allows for all-in
-            maximum = np.min(self.stack, self.bet_raise_max_amount + self.game.stakes.small_bet)
+            maximum = min(self.stack, self.bet_raise_max_amount + self.game.stakes.small_bet)
             if maximum <= self.bet_raise_min_amount:
                 chips_raise = self.stack
             else:
