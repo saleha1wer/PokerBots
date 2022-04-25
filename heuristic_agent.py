@@ -1,4 +1,5 @@
 from pokerface import PokerPlayer, Rank,Ranks
+from pokerface.evaluators import ShortDeckEvaluator
 import numpy as np
 import random
 """
@@ -16,12 +17,18 @@ TODO:
 class HeuristicAgent(PokerPlayer):
     def __init__(self, game):
         super().__init__(game)
+        
+    def preflopevaluator(self):
+        
+        return
     
     def act(self):
+        evaluator = ShortDeckEvaluator()
         low = self.get_lowest_card()
         high = self.get_highest_card()
         hasPair = self.has_pair()   
         total_pot = self.game.pot / 2 # pot in terms of big blinds
+        hra = self.game.players[len(self.game.players)-1] # if hra is last player
 
         possible_actions = []
         if self.can_fold(): possible_actions.append(self.fold)
@@ -32,18 +39,55 @@ class HeuristicAgent(PokerPlayer):
             possible_actions.append(self.bet_raise)
 
         if len(possible_actions) != 0:
+            print("Cards:", hra.hole)
+            if(len(self.game.board) == 0):
+                print("Deciding best action for pre-flop")
+                if low < 9 and high < 12: # The paper used 'low < 7 and high < 11'. I slightly changed it as we are doing short deck poker. 
+                    f = self.check_call
+                elif total_pot <= 2 :
+                    f = self.bet_raise
+                elif hasPair and self.can_bet_raise():
+                    f = self.bet_raise
+                elif total_pot >= 6 and self.can_fold():
+                    f = self.fold
+                else:
+                    f = self.check_call
+            elif(len(self.game.board) == 3):
+                print("Deciding best action for flop")
+                x = evaluator.evaluate_hand(hra.hole, self.game.board)
+                print("Im here:",x.__dict__) #Tried the pokerface evaluate function seems to be taking a long time.
+                index = getattr(x,"_index")
+                print(getattr(x,"_index"), type(getattr(x,"_index")))
+                if(index<350 and self.can_bet_raise()):
+                    f = self.bet_raise
+                elif(index>850 and self.can_fold()):
+                    f = self.fold
+                else:
+                    f = self.check_call
+            elif(len(self.game.board) == 4):
+                print("Deciding best action for turn")
+                x = evaluator.evaluate_hand(hra.hole, self.game.board)
+                print("Im here:",x.__dict__) #Tried the pokerface evaluate function seems to be taking a long time.
+                index = getattr(x,"_index")
+                if(index<=350 and self.can_bet_raise()):
+                    f = self.bet_raise
+                elif(index>850 and self.can_fold()):
+                    f = self.fold
+                else:
+                    f = self.check_call
+            elif(len(self.game.board) == 5):
+                x = evaluator.evaluate_hand(hra.hole, self.game.board)
+                print("Im here:",x.__dict__) #Tried the pokerface evaluate function seems to be taking a long time.
+                print("Deciding best action for river")
+                index = getattr(x,"_index")
+                if(index<350 and self.can_bet_raise()):
+                    f = self.bet_raise
+                elif(index>850 and self.can_fold()):
+                    f = self.fold
+                else:
+                    f = self.check_call
             # Heuristic is from : http://game.engineering.nyu.edu/wp-content/uploads/2018/05/generating-beginner-heuristics-for-simple-texas-holdem.pdf  
             # Figure 5: "The best 4-statement heuristic found with genetic programming"
-            if low < 9 and high < 12: # The paper used 'low < 7 and high < 11'. I slightly changed it as we are doing short deck poker. 
-                f = self.check_call
-            elif total_pot <= 2 and self.can_bet_raise():
-                f = self.bet_raise
-            elif hasPair and self.can_bet_raise():
-                f = self.bet_raise
-            elif total_pot >= 6 and self.can_fold():
-                f = self.fold
-            else:
-                f = self.check_call
 
             if f == self.bet_raise:
                 self.bet_raise(chips_raise)
