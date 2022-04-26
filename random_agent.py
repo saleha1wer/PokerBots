@@ -9,44 +9,37 @@ from the PokerPlayer class. The act function is used to select and perform an ac
 TO DO: have a look at the weights we want to use per action
 """
 
-
 class RandomAgent(PokerPlayer):
     def __init__(self, game):
         super().__init__(game)
 
     def act(self):
+        actions = ['fold', 'check_call', 'bet_raise', 'discard_draw', 'showdown']
+        weight_options = [0.1, 0.5, (0.1, 0.3), 0.05, 0.05]
+
         possible_actions = []
         weights = []
 
-        if self.can_fold():
-            possible_actions.append(self.fold)
-            weights.append(0.1)
+        for i in range(len(actions)):
+            can_action = 'can_' + actions[i]
 
-        if self.can_check_call():
-            possible_actions.append(self.check_call)
-            weights.append(0.5)
+            if can_action == 'can_bet_raise':
+                # Select a random possible raise value; allows for all-in
+                maximum = min(self.stack, self.bet_raise_max_amount + self.game.stakes.small_bet)
+                if maximum <= self.bet_raise_min_amount:
+                    chips_raise = self.stack
+                else:
+                    chips_raise = random.randrange(self.bet_raise_min_amount, maximum)
 
-        if self.can_bet_raise():
-            # Select a random possible raise value; allows for all-in
-            maximum = min(self.stack, self.bet_raise_max_amount + self.game.stakes.small_bet)
-            if maximum <= self.bet_raise_min_amount:
-                chips_raise = self.stack
+                possible_actions.append(getattr(self, actions[i]))
+                if chips_raise == maximum:
+                    weights.append(weight_options[i][0])
+                else:
+                    weights.append(weight_options[i][1])
             else:
-                chips_raise = random.randrange(self.bet_raise_min_amount, maximum)
-
-            possible_actions.append(self.bet_raise)
-            if chips_raise == maximum:
-                weights.append(0.1)
-            else:
-                weights.append(0.3)
-
-        if self.can_discard_draw():
-            possible_actions.append(self.discard_draw)
-            weights.append(0.05)
-
-        if self.can_showdown():
-            possible_actions.append(self.showdown)
-            weights.append(0.05)
+                if getattr(self, can_action):
+                    possible_actions.append(getattr(self, actions[i]))
+                    weights.append(weight_options[i])
 
         # Normalize weights if they don't sum to 1
         if np.sum(weights) != 1:
@@ -63,4 +56,3 @@ class RandomAgent(PokerPlayer):
                 print('action: ', f.__name__)
         else:
             pass
-
