@@ -1,5 +1,5 @@
 
-from pokerface import Stakes, NoLimitShortDeckHoldEm
+from pokerface import Stakes, NoLimitTexasHoldEm
 import numpy as np
 import random
 from random_agent import RandomAgent
@@ -90,7 +90,7 @@ def play_game(n_rounds,players,game,starting_stacks,stakes):
         print('starting round ',round)
         stacks = play_round(players,stacks,game)
         if len(stacks) > 1:
-            game = NoLimitShortDeckHoldEm(stakes,stacks)
+            game = NoLimitTexasHoldEm(stakes,stacks)
         new_players = []
         for player in players:
             if player.stack != 0:

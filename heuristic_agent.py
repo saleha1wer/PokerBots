@@ -19,7 +19,6 @@ class HeuristicAgent(PokerPlayer):
         super().__init__(game)
         
     def preflopevaluator(self):
-        
         return
     
     def act(self):
@@ -130,7 +129,15 @@ class HeuristicAgent(PokerPlayer):
             elif card.rank == Rank.SEVEN:
                 rank = 7
             elif card.rank == Rank.SIX:
-                rank = 6 
+                rank = 6
+            elif card.rank == Rank.FIVE:
+                rank = 5
+            elif card.rank == Rank.FOUR:
+                rank = 4
+            elif card.rank == Rank.THREE:
+                rank = 3
+            elif card.rank == Rank.TWO:
+                rank = 2
             else:
                 raise ValueError('No Rank Found')
             if rank < min:
@@ -159,7 +166,15 @@ class HeuristicAgent(PokerPlayer):
             elif card.rank == Rank.SEVEN:
                 rank = 7
             elif card.rank == Rank.SIX:
-                rank = 6 
+                rank = 6
+            elif card.rank == Rank.FIVE:
+                rank = 5
+            elif card.rank == Rank.FOUR:
+                rank = 4
+            elif card.rank == Rank.THREE:
+                rank = 3
+            elif card.rank == Rank.TWO:
+                rank = 2
             else:
                 raise ValueError('No Rank Found')
             if rank > max:
