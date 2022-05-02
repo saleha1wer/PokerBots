@@ -1,7 +1,6 @@
 from pokerface import PokerPlayer, Rank,Ranks
 from pokerface.evaluators import ShortDeckEvaluator
-import numpy as np
-import random
+
 """
 This is our heuristic agent that will play poker using some heuristics. The class inherits everything
 from the PokerPlayer class. The act function is used to select and perform an action.
@@ -17,9 +16,6 @@ TODO:
 class HeuristicAgent(PokerPlayer):
     def __init__(self, game):
         super().__init__(game)
-        
-    def preflopevaluator(self):
-        return
     
     def act(self):
         evaluator = ShortDeckEvaluator()
@@ -51,6 +47,7 @@ class HeuristicAgent(PokerPlayer):
                     f = self.fold
                 else:
                     f = self.check_call
+
             elif(len(self.game.board) == 3):
                 print("Deciding best action for flop")
                 x = evaluator.evaluate_hand(hra.hole, self.game.board)
@@ -63,6 +60,7 @@ class HeuristicAgent(PokerPlayer):
                     f = self.fold
                 else:
                     f = self.check_call
+
             elif(len(self.game.board) == 4):
                 print("Deciding best action for turn")
                 x = evaluator.evaluate_hand(hra.hole, self.game.board)
@@ -74,6 +72,7 @@ class HeuristicAgent(PokerPlayer):
                     f = self.fold
                 else:
                     f = self.check_call
+
             elif(len(self.game.board) == 5):
                 x = evaluator.evaluate_hand(hra.hole, self.game.board)
                 print("Im here:",x.__dict__) #Tried the pokerface evaluate function seems to be taking a long time.

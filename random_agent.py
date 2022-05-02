@@ -29,12 +29,12 @@ class RandomAgent(PokerPlayer):
         if self.can_bet_raise():
             # Select a random possible raise value; allows for all-in
             possible_actions.append(self.bet_raise)
-            maximum = min(self.stack, self.bet_raise_max_amount + self.game.stakes.small_bet)
 
+            maximum = min(self.stack, self.bet_raise_max_amount + self.game.stakes.small_bet)
             if maximum <= self.bet_raise_min_amount:
                 # Gives an error, because you bet below the minimum amount
                 # Should be allowed in the NoLimit version
-                chips_raise = self.stack
+                chips_raise = self.bet_raise_min_amount
             else:
                 chips_raise = random.randrange(self.bet_raise_min_amount, maximum)
 
@@ -60,9 +60,9 @@ class RandomAgent(PokerPlayer):
             f = np.random.choice(possible_actions, p = weights)
             if f == self.bet_raise:
                 self.bet_raise(chips_raise)
-                print('action: ', f.__name__, chips_raise)
+                print('random_action: ', f.__name__, chips_raise)
             else:
                 f()
-                print('action: ', f.__name__)
+                print('random_action: ', f.__name__)
         else:
             pass

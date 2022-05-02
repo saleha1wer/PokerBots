@@ -1,9 +1,8 @@
 
-from pokerface import Stakes, NoLimitTexasHoldEm
-import numpy as np
-import random
+from pokerface import NoLimitShortDeckHoldEm
 from random_agent import RandomAgent
 from heuristic_agent import HeuristicAgent
+from mcts_agent import MCTSAgent
 
 def play_round(players,stacks,game):
     # TODO: Check out button blinds
@@ -73,6 +72,7 @@ def play_round(players,stacks,game):
     # Showdown
     print("\n")
     new_stacks = []
+
     for p in nls.players:
         if p.can_showdown():
             p.showdown()
@@ -90,14 +90,16 @@ def play_game(n_rounds,players,game,starting_stacks,stakes):
         print('starting round ',round)
         stacks = play_round(players,stacks,game)
         if len(stacks) > 1:
-            game = NoLimitTexasHoldEm(stakes,stacks)
+            game = NoLimitShortDeckHoldEm(stakes,stacks)
         new_players = []
         for player in players:
             if player.stack != 0:
-                if isinstance(player,RandomAgent):
+                if isinstance(player, RandomAgent):
                     new_players.append(RandomAgent(game))
-                elif isinstance(player,HeuristicAgent):
+                elif isinstance(player, HeuristicAgent):
                     new_players.append(HeuristicAgent(game))
+                elif isinstance(player, MCTSAgent):
+                    new_players.append(MCTSAgent(game))
 
         players = new_players
         if len(players) == 1:

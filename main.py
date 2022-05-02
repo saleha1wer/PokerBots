@@ -1,17 +1,19 @@
 from game import play_game
-from pokerface import Stakes, NoLimitTexasHoldEm
+from pokerface import Stakes, NoLimitShortDeckHoldEm
 from random_agent import RandomAgent
 from heuristic_agent import HeuristicAgent
+from mcts_agent import MCTSAgent
 
 
 stakes = Stakes(0, (1, 2))
 starting_stacks = 200, 200, 200
 n_rounds = 100
 
-nls = NoLimitTexasHoldEm(stakes,starting_stacks)
+nls = NoLimitShortDeckHoldEm(stakes,starting_stacks)
 ra1 = RandomAgent(nls)
 ra2 = RandomAgent(nls)
 ha3 = HeuristicAgent(nls)
+mc4 = MCTSAgent(nls)
 
 players = [ra1, ra2, ha3]
 

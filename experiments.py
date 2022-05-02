@@ -1,5 +1,5 @@
 from game import play_game
-from pokerface import Stakes, NoLimitTexasHoldEm
+from pokerface import Stakes, NoLimitShortDeckHoldEm
 from random_agent import RandomAgent
 from heuristic_agent import HeuristicAgent
 
@@ -18,7 +18,7 @@ starting_stacks = 200, 200, 200
 n_rounds = 50
 n_games = 100
 
-nls = NoLimitTexasHoldEm(stakes, starting_stacks)
+nls = NoLimitShortDeckHoldEm(stakes, starting_stacks)
 ra = RandomAgent(nls)
 ha = HeuristicAgent(nls)
 
