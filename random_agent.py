@@ -6,7 +6,7 @@ import random
 This is our random agent that will play poker randomly. The class inherits everything
 from the PokerPlayer class. The act function is used to select and perform an action.
 
-TO DO: have a look at the weights we want to use per action
+TODO: have a look at the weights we want to use per action
 """
 
 

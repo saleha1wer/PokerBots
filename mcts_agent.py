@@ -59,12 +59,12 @@ class MCTSAgent(PokerPlayer):
 
         self.n_simulations = 1000
 
-    def act(self, n_simulations):
+    def act(self):
         # Create root node
         root_node = MCTSNode()
 
         # Get a copy of the game and simulate a MCTS leaf
-        for i in range(n_simulations):
+        for i in range(self.n_simulations):
             game_copy = copy.deepcopy(self.game)
             leaf_node, game_copy = self.traverse(root_node, game_copy)
             game_copy = self.rollout(game_copy)
@@ -72,93 +72,93 @@ class MCTSAgent(PokerPlayer):
             leaf_node.backpropagate(score)
 
         # Select and perform the best action
-        f = root_node.best_action(c_val=0.01)
-        f()
-        print('MCTS_action: ', f.__name__)
+        action = root_node.best_action(c_val=0.01)
+        action()
+        print('MCTS_action: ', action.__name__)
 
     def traverse(self, root_node, game_copy):
         current_node = root_node
-        while not game_copy.is_terminal:
+        while not game_copy.is_terminal():
             if current_node.fully_expanded:
                 if current_node.terminal:
                     return current_node, game_copy
                 else:
                     current_node = current_node.best_child()
             else:
-                # Retrieve all possible actions
-                possible_actions = []
+                # Retrieve all possible actions for the MCTSAgent in the game_copy
+                bet_options, action = self.get_action(game_copy)
 
-                for p in game_copy.players:
-                    if issubclass(p, MCTSAgent):
-                        # Add all available actions of agent in the game_copy to a list
-                        if p.can_fold(): possible_actions.append(p.fold)
-                        if p.can_check_call(): possible_actions.append(p.check_call)
-                        if p.can_bet_raise():
-                            bet_options = range(p.bet_raise_min_amount,
-                                                p.bet_raise_max_amount + game_copy.stakes.small_bet)
-                            for value in bet_options:
-                                possible_actions.append(p.bet_raise(value))
-                        if p.can_discard_draw(): possible_actions.append(p.discard_draw)
-                        if p.can_showdown(): possible_actions.append(p.showdown)
+                # If no action is returned, go to next state until we can play
+                while not game_copy.is_terminal and action == None:
+                    game_copy.step() # TODO: change this to going to a next state
+                    bet_options, action = self.get_action(game_copy)
 
-                # Retry when there are no possible actions
-                if len(possible_actions) == 0:
-                    ...
-
-                # Stop when the current node has a terminal game state
+                # If the game has ended, report that this node ends in terminal and stop traversal
                 if game_copy.is_terminal:
                     current_node.terminal = True
                     return current_node, game_copy
 
-                # The poker game isn't terminal yet, new action is picked
-                np.random.shuffle(possible_actions)
-                action = None
-                for a in possible_actions:
-                    if a not in current_node.child_actions:
-                        action = a
+                # If the selected action is in the child node actions, set it to None
+                if action in current_node.child_actions:
+                        action = None
 
                 # Current node is fully expanded, no action is taken
                 if action == None:
                     current_node.fully_expanded = True
                     current_node = current_node.best_child()
                 # Current node isn't fully expanded, action is taken to expand the tree
+                elif action == self.bet_raise:
+                    value = np.random.choice(bet_options)
+                    action(value)
                 else:
-                    game_copy.action()
+                    action()
                     current_node = current_node.expand(action)
                     return current_node, game_copy
 
     def rollout(self, game_copy):
         """" Perform rollout until game is over """
-        while not game_copy.is_terminal:
-            possible_actions = []
+        while not game_copy.is_terminal():
+            bet_options, action = self.get_action(game_copy)
 
-            for p in game_copy.players:
-                if issubclass(p, MCTSAgent):
-                    # Add all available actions of agent in the game_copy to a list
-                    if p.can_fold(): possible_actions.append(p.fold)
-                    if p.can_check_call(): possible_actions.append(p.check_call)
-                    if p.can_bet_raise():
-                        bet_options = range(self.bet_raise_min_amount, p.bet_raise_max_amount + game_copy.stakes.small_bet)
-                        for value in bet_options:
-                            possible_actions.append(p.bet_raise(value))
-                    if p.can_discard_draw(): possible_actions.append(p.discard_draw)
-                    if p.can_showdown(): possible_actions.append(p.showdown)
-
-                    # Pick a random action from the list and execute it in the game_copy
-                    if(len(possible_actions) != 0):
-                        f = np.random.choice(possible_actions)
-                        f()
+            if action == self.bet_raise:
+                value = np.random.choice(bet_options)
+                action(value)
+            else:
+                action()
         return game_copy
 
     def evaluate(self, game_copy):
         """ Evaluate if the chosen leaf leads to win or loss """
-        if game_copy.is_terminal:
+        if game_copy.is_terminal():
             for p in game_copy.players:
                 if p.stack != 0:
                     winner = p
 
-                    if issubclass(winner, MCTSAgent):
+                    if isinstance(winner, MCTSAgent):
                         score = 1
                     else:
                         score = 0
                     return score
+
+    def get_action(self, game):
+        """ Get a list with possible actions """
+        # TODO: check if this action works in both self.game as game_copy
+        bet_options = action = None
+        possible_actions = []
+
+        for p in game.players:
+            if isinstance(p, MCTSAgent) and p.is_actor():
+                # Add all available actions of agent in the game_copy to a list
+                if p.can_fold(): possible_actions.append(self.fold)
+                if p.can_check_call(): possible_actions.append(self.check_call)
+                if p.can_bet_raise():
+                    bet_options = range(p.bet_raise_min_amount,
+                                        p.bet_raise_max_amount + game.stakes.small_bet)
+                    possible_actions.append(self.bet_raise)
+                if p.can_discard_draw(): possible_actions.append(self.discard_draw)
+                if p.can_showdown(): possible_actions.append(self.showdown)
+
+        # Pick a random action from the list and execute it in the game_copy
+        if(len(possible_actions) != 0):
+            action = np.random.choice(possible_actions)
+        return bet_options, action

@@ -15,6 +15,6 @@ ra2 = RandomAgent(nls)
 ha3 = HeuristicAgent(nls)
 mc4 = MCTSAgent(nls)
 
-players = [ra1, ra2, ha3]
+players = [ra1, ha3, mc4]
 
 play_game(n_rounds,players,nls,starting_stacks,stakes)
