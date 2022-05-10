@@ -6,7 +6,7 @@ import random
 This is our random agent that will play poker randomly. The class inherits everything
 from the PokerPlayer class. The act function is used to select and perform an action.
 
-TODO: have a look at the weights we want to use per action
+TO DO: have a look at the weights we want to use per action
 """
 
 
@@ -43,20 +43,25 @@ class RandomAgent(PokerPlayer):
             else:
                 weights.append(0.3)
 
-        if self.can_discard_draw():
-            possible_actions.append(self.discard_draw)
-            weights.append(0.05)
+        #if self.can_discard_draw(): #Not applicable in holdem
+        #    possible_actions.append(self.discard_draw)
+        #    weights.append(0.05)
 
-        if self.can_showdown():
-            possible_actions.append(self.showdown)
-            weights.append(0.05)
+
 
         # Normalize weights if they don't sum to 1
         if np.sum(weights) != 1:
             weights = weights / np.sum(weights)
+            
+        if self.can_showdown():
+            f = self.showdown
+            f()
+            print("Showdown")
+        #    possible_actions.append(self.showdown)
+        #    weights.append(0.05)
 
         # Select a random action from the possible_actions list
-        if len(possible_actions) != 0:
+        elif len(possible_actions) != 0:
             f = np.random.choice(possible_actions, p = weights)
             if f == self.bet_raise:
                 self.bet_raise(chips_raise)
