@@ -3,7 +3,7 @@ from pokerface import NoLimitShortDeckHoldEm,NoLimitTexasHoldEm
 from random_agent import RandomAgent
 from heuristic_agent import HeuristicAgent
 from mcts_agent import MCTSAgent
-from EV import EVAgent
+from ev_agent import EVAgent
 
 def play_round(players,stacks,game):
     # TODO: Check out button blinds

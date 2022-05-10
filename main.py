@@ -3,7 +3,7 @@ from pokerface import Stakes, NoLimitShortDeckHoldEm,NoLimitTexasHoldEm
 from random_agent import RandomAgent
 from heuristic_agent import HeuristicAgent
 from mcts_agent import MCTSAgent
-from EV import EVAgent
+from ev_agent import EVAgent
 
 
 stakes = Stakes(0, (1, 2))

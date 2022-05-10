@@ -6,7 +6,7 @@ import random
 This is our random agent that will play poker randomly. The class inherits everything
 from the PokerPlayer class. The act function is used to select and perform an action.
 
-TO DO: have a look at the weights we want to use per action
+TODO: have a look at the weights we want to use per action
 """
 
 
@@ -28,20 +28,20 @@ class RandomAgent(PokerPlayer):
 
         if self.can_bet_raise():
             # Select a random possible raise value; allows for all-in
-            possible_actions.append(self.bet_raise)
-
             maximum = min(self.stack, self.bet_raise_max_amount + self.game.stakes.small_bet)
             if maximum <= self.bet_raise_min_amount:
-                # Gives an error, because you bet below the minimum amount
-                # Should be allowed in the NoLimit version
-                chips_raise = self.bet_raise_min_amount
+                # Call if you can only bet less then the minimum bet size
+                possible_actions.append(self.check_call)
+                weights.append(0.5)
+
             else:
                 chips_raise = random.randrange(self.bet_raise_min_amount, maximum)
+                possible_actions.append(self.bet_raise)
 
-            if chips_raise == maximum:
-                weights.append(0.1)
-            else:
-                weights.append(0.3)
+                if chips_raise == maximum:
+                    weights.append(0.1)
+                else:
+                    weights.append(0.3)
 
         #if self.can_discard_draw(): #Not applicable in holdem
         #    possible_actions.append(self.discard_draw)
