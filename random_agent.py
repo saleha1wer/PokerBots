@@ -53,21 +53,21 @@ class RandomAgent(PokerPlayer):
         if np.sum(weights) != 1:
             weights = weights / np.sum(weights)
             
-        if self.can_showdown():
-            f = self.showdown
-            f()
-            print("Showdown")
+        # if self.can_showdown():
+        #     f = self.showdown
+        #     f()
+        #     print("Showdown")
         #    possible_actions.append(self.showdown)
         #    weights.append(0.05)
 
         # Select a random action from the possible_actions list
-        elif len(possible_actions) != 0:
+        if len(possible_actions) != 0:
             f = np.random.choice(possible_actions, p = weights)
             if f == self.bet_raise:
                 self.bet_raise(chips_raise)
-                print('random_action: ', f.__name__, chips_raise)
+                print('random_action:\t', f.__name__, chips_raise)
             else:
                 f()
-                print('random_action: ', f.__name__)
+                print('random_action:\t', f.__name__)
         else:
             pass
