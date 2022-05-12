@@ -1,9 +1,10 @@
 
-from pokerface import NoLimitShortDeckHoldEm,NoLimitTexasHoldEm
+from pokerface import NoLimitShortDeckHoldEm,NoLimitTexasHoldEm, Stakes
 from random_agent import RandomAgent
 from heuristic_agent import HeuristicAgent
 from mcts_agent import MCTSAgent
-from ev_agent import EVAgent
+from EV import EVAgent
+from EVhands import PossibleHands
 
 def play_round(players,stacks,game):
     # TODO: Check out button blinds
@@ -12,7 +13,7 @@ def play_round(players,stacks,game):
     nls._verify()
     nls._setup()
     game_over = False
-
+    print(players)
     # Deal to players
     while nls.nature.can_deal_hole():
         nls.nature.deal_hole()
@@ -73,29 +74,56 @@ def play_round(players,stacks,game):
     # Showdown
     print("\n")
     new_stacks = []
-    print(nls.pot,nls.side_pots)
-    for p in nls.players:
-        print(p,p.can_showdown())
-        if p.can_showdown():
-                p.showdown()
-        print(p)
+    print(nls.pot)
+    for pot in nls.side_pots:
+        print("sidepot:", pot)
+    print("Stage:",nls.stage)
+    if nls.stage != None:
+        while(nls.stage.is_showdown_stage()):
+            for p in nls.players:
+                print(p,p.can_showdown(),)
+                if p.can_showdown():
+                    p.showdown()
+                    print(p)
+            if(nls.stage == None):
+                break
+            print("Showdown stage:",nls.stage.is_showdown_stage())
     for p in nls.players:
         if p.stack != 0:
             new_stacks.append(p.stack)
-
+    print(new_stacks)
     return new_stacks
 
-def play_game(n_rounds,players,game,starting_stacks,stakes):
+def play_game(n_rounds,players,game,starting_stacks,stakes, button, no_players):
     # Play multiple rounds using same players 
     # Players is a list of the players
     stacks = starting_stacks
+    blinds = (0,2,4)
     for round in range(n_rounds):
         print('starting round ',round)
         stacks = play_round(players,stacks,game)
+        for player in players:
+            if player.stack != 0:
+                no_players -= 1
+        button += 1
+        if(button == no_players-1):
+            sb = 0
+            bb = 1
+            button = -1 #Reset button to 0
+        elif(button == no_players-2):
+            sb = button + 1
+            bb = 0
+        else:
+            sb = button + 1
+            bb = button + 2
+        blinds = {sb: 1, bb: 2}
         if len(stacks) > 1:
             #game = NoLimitShortDeckHoldEm(stakes,stacks)
-            game = NoLimitTexasHoldEm(stakes,stacks)
+            game = NoLimitTexasHoldEm(Stakes(0, blinds),stacks)
         new_players = []
+        blinds = {0: 1, 1: 2}
+
+            
         for player in players:
             if player.stack != 0:
                 if isinstance(player, RandomAgent):
