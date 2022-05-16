@@ -56,7 +56,6 @@ class MCTSNode:
 class MCTSAgent(PokerPlayer):
     def __init__(self, game):
         super().__init__(game)
-
         self.n_simulations = 1000
 
     def act(self):
