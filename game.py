@@ -5,6 +5,7 @@ from random_agent import RandomAgent
 from ev_agent import EVAgent
 from shallow_mcts import ShallowMCTS
 from game_actions import *
+import EVhands
 
 def get_stakes(players, button, sb_value=1, bb_value=2):
     # Get the initial stakes based on button position
@@ -15,6 +16,15 @@ def get_stakes(players, button, sb_value=1, bb_value=2):
     else:
         stakes = Stakes(0, {button + 1: sb_value, button + 2: bb_value})
     return stakes
+
+def Keyarrange():
+    ranges = []
+    for i in EVhands.player_range:
+        ranges.append(EVhands.player_range[i])
+    EVhands.player_range.clear()
+    for i in range(len(ranges)):
+        EVhands.player_range[i] = ranges[i]
+    return
 
 def increment_blinds(players, button, sb_value=1, bb_value=2):
     # I am not entirely certain but I think there is a possibility of
@@ -89,18 +99,20 @@ def play_round(players, game):
                     new_p = t(nls)
                     new_p._stack = p.stack
             new_players.append(new_p)
+        else:
+            del EVhands.player_range[i]
+    Keyarrange()
+    print("RANGES:",EVhands.player_range)
     return new_stacks, new_players
 
 def play_game(n_rounds, players, game, starting_stacks, button=0):
     # Play n rounds of poker games with the supplied agents
     starting_stakes = get_stakes(players, button)
-
     # Set small blind and big blind
-    sb_value = 2
-    bb_value = 4
+    sb_value = 1
+    bb_value = 2
     blinds = (0, sb_value, bb_value)
     stacks = starting_stacks
-
     for round in range(n_rounds):
         if round == 0:
             # First round
@@ -122,3 +134,4 @@ def play_game(n_rounds, players, game, starting_stacks, button=0):
 
         # Update blinds positions
         button, blinds = increment_blinds(players, button, sb_value, bb_value)
+        EVhands.possible_hands.clear()
