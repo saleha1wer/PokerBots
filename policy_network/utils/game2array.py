@@ -120,16 +120,22 @@ def game2array(game,player,max_players=5,starting_stack=200):
     """ 
     Parameter 'player' is the main player
     Encodes a game object to two arrays:                            
-        - [win_percentage,hand strength, pot, stack, to call,player position,game stage] example-->[0.3,1.2,0.3,0.1,0.25] 
-                                                                30% win chance, 1.2 pot... 
+        - [win_percentage,hand strength, pot, stack, to call,player position,game stage] example-->[0.3,0.5,1.2,0.3,0.1,0.25,1] 
+                                                                30% win chance, 0.5 hand strenght, 1.2 pot... 
                                                                 player position = player.index/len(players)
+                                                                game stage = [0,1/3,2/3,1] preflop,flop,turn,river
         - [opponents in hand,opponents_stacks] --> example [1,0,1,1,0
                                                             1.3,1,1.7,0,0]
     """
     # player_cards = encode_cards(player.hole)
     # board = encode_board(game.board)
     win_percentage = calc_win(player.hole, game.board)
-    hand_strength = 1 - (float(StandardEvaluator().evaluate_hand(player.hole,game.board).index)/7462)
+    try :
+        hand_strength = 1 - (float(StandardEvaluator().evaluate_hand(player.hole,game.board).index)/7462)
+    except:
+        print(player.hole,game.board)
+        print('hand strength failed, board length: ', len(game.board))
+        hand_strength = 0.5
     players_in_hand = get_players_in_hand(game,player,max=max_players)
     opponent_stacks = get_opponent_stacks(game,player,max=max_players, starting_stack=starting_stack)
     pos = (player.index)/len(game.players)

@@ -1,4 +1,4 @@
-# Neural network - input -> features of state, output -> action distribution and win rate
+# Neural network - input -> features of state, output -> action distribution
 
 from keras.models import Model
 from keras.losses import mean_squared_error, binary_crossentropy
@@ -36,8 +36,9 @@ class Network:
         print(network.summary())
 
     def _read_data(self,game_info,opponent_info,action_ds):
-        # game_array = ... # Array of shape (N, num_feature_layers, height, width) 
-        # action_ds = ...  # Array of size (N,1)
+        # game_info = ... # Array of shape (N, num_features)
+        # opponent_info = ... # Array of shape (N, 2*max_num_opponents)  
+        # action_ds = ...  # Array of size (N,num_actions)
 
 
         print('shape of input data - 1: ',game_info.shape)
