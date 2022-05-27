@@ -4,7 +4,7 @@ from random_agent import RandomAgent
 from heuristic_agent import HeuristicAgent
 from mcts_agent import MCTSAgent
 from ev_agent import EVAgent
-from shallow_mcts import ShallowMCTS
+from shallow_mcts_test import ShallowMCTS
 
 button = 0
 button = 0
@@ -14,7 +14,7 @@ if(no_players == 2):
 else:
     stakes = Stakes(0, {button + 1: 1, button + 2: 2})
 starting_stacks = 200, 200, 200, 200
-n_rounds = 100
+n_rounds = 1
 
 #nls = NoLimitShortDeckHoldEm(stakes,starting_stacks)
 nls = NoLimitTexasHoldEm(stakes,starting_stacks)

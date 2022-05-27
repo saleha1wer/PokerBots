@@ -3,7 +3,7 @@ from heuristic_agent import HeuristicAgent
 from mcts_agent import MCTSAgent
 from random_agent import RandomAgent
 from ev_agent import EVAgent
-from shallow_mcts import ShallowMCTS
+from shallow_mcts_test import ShallowMCTS
 from game_actions import *
 
 def get_stakes(players, button, sb_value=1, bb_value=2):
