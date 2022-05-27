@@ -1,6 +1,8 @@
 
-from pokerface import Stakes, NoLimitShortDeckHoldEm,NoLimitTexasHoldEm,PokerPlayer,Rank,Suit,RankEvaluator
-from game_actions import deal_cards, bet_stage,deal_board
+import re
+from chess import Board
+from pandas import array
+from pokerface import Stakes, NoLimitShortDeckHoldEm,NoLimitTexasHoldEm,PokerPlayer,Rank,Suit,RankEvaluator,StandardEvaluator
 from random_agent import RandomAgent
 import numpy as np 
 
@@ -72,42 +74,82 @@ import numpy as np
 def calc_win(hole,board):
     return 0
 
-def get_opponent_stacks(game,player):
+def get_opponent_stacks(game,player,max=5,starting_stack=200):
     """
-    returns an array of the opponent stacks of maximum 7 opponents
+    returns an array of the opponent stacks of maximum 5 opponents
     """
     players = list(game.players)
     players.remove(player)
-    stacks = [p.stack/player.starting_stack for p in players]
+    stacks = [p.stack/starting_stack for p in players]
     n_opp = len(stacks)
-    if n_opp > 7:
-        raise ValueError('More than 7 opponents')
-    temp = [0,0,0,0,0,0,0]
+    if n_opp > max:
+        raise ValueError('More than {} opponents'.format(max))
+    temp = list(np.zeros(max))
     temp[:n_opp] = stacks
     stacks = temp
     return stacks
 
-def game2array(game,player):
+def get_players_in_hand(game,player, max = 5):
     """
-    Encodes a game object to two arrays:                            where parameter 'player' is the main player
-        - [win_percentage, pot, stack, to_call,player_stacks]
-        - [player_position, players_in_hand]
+    returns an array of 0s except for the indicies of the players in the current hand have a value of 1
     """
+    players = list(game.players)
+    players.remove(player)
+    players_in_hand = np.zeros(max).tolist()
+    for idx in range(len(players_in_hand)):
+        if idx < len(players):
+            if players[idx].is_active():
+                players_in_hand[idx] = 1
+    return players_in_hand
 
+def get_opponent_bets(game,player,max=5,starting_stack=200):
+    """
+    should return the total stake of the opponents in this hand - not complete
+    """
+    players = list(game.players)
+    players.remove(player)
+    opponent_bets = np.zeros(max).tolist()
+    for idx in range(len(opponent_bets)):
+        if idx < len(players):
+            if players[idx].is_active():
+                opponent_bets[idx] = (players[idx].total - players[idx].stack) /starting_stack
+    return opponent_bets
+
+
+def game2array(game,player,max_players=5,starting_stack=200):
+    """ 
+    Parameter 'player' is the main player
+    Encodes a game object to two arrays:                            
+        - [win_percentage,hand strength, pot, stack, to call,player position,game stage] example-->[0.3,1.2,0.3,0.1,0.25] 
+                                                                30% win chance, 1.2 pot... 
+                                                                player position = player.index/len(players)
+        - [opponents in hand,opponents_stacks] --> example [1,0,1,1,0
+                                                            1.3,1,1.7,0,0]
+    """
     # player_cards = encode_cards(player.hole)
     # board = encode_board(game.board)
-
     win_percentage = calc_win(player.hole, game.board)
-    opponent_stacks = get_opponent_stacks(game,player)
-
+    hand_strength = 1 - (float(StandardEvaluator().evaluate_hand(player.hole,game.board).index)/7462)
+    players_in_hand = get_players_in_hand(game,player,max=max_players)
+    opponent_stacks = get_opponent_stacks(game,player,max=max_players, starting_stack=starting_stack)
+    pos = (player.index)/len(game.players)
     if player.can_check_call():
-        to_call = player.check_call_amount
+        to_call = player.check_call_amount/starting_stack
     else:
         to_call = 0
+    if len(game.board) == 0:
+        stage = 0
+    elif len(game.board) < 4:
+        stage = 1/3
+    elif len(game.board) == 4:
+        stage = 2/3
+    elif len(game.board) == 5:
+        stage = 1
+    # opponent_bets = get_opponent_bets(game,player,max=max_players, starting_stack=starting_stack)
 
-    array_one = [win_percentage,  game.pot/player.starting_stack,player.stack/player.starting_stack,to_call]
-    array_one.extend(opponent_stacks)
-    print(array_one)
+    array_one = [win_percentage,hand_strength, game.pot/starting_stack,player.stack/starting_stack,to_call,pos,stage]
 
-    array_two = []
-    return array_one,array_two
+    array_two = players_in_hand
+    array_two.extend(opponent_stacks)
+    # array_two = np.vstack([array_two,opponent_stacks])
+    return np.array(array_one),np.array(array_two)
