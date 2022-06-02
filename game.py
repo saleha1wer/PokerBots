@@ -5,16 +5,31 @@ from random_agent import RandomAgent
 from ev_agent import EVAgent
 from shallow_mcts_test import ShallowMCTS
 from game_actions import *
+import EVhands
+import PreFlop
+
+PlayeronButton = {
+    "button":0
+    }
 
 def get_stakes(players, button, sb_value=1, bb_value=2):
     # Get the initial stakes based on button position
     # Button position should not exceed (n_players - 2)
     n_players = len(players)
     if n_players == 2:
-        stakes = Stakes(0, {button + 1: sb_value, button: bb_value})
+        stakes = Stakes(0, {button: sb_value, button+1: bb_value})
     else:
         stakes = Stakes(0, {button + 1: sb_value, button + 2: bb_value})
     return stakes
+
+def Keyarrange():
+    ranges = []
+    for i in EVhands.player_range:
+        ranges.append(EVhands.player_range[i])
+    EVhands.player_range.clear()
+    for i in range(len(ranges)):
+        EVhands.player_range[i] = ranges[i]
+    return
 
 def increment_blinds(players, button, sb_value=1, bb_value=2):
     # I am not entirely certain but I think there is a possibility of
@@ -25,19 +40,25 @@ def increment_blinds(players, button, sb_value=1, bb_value=2):
     # Increment blinds by passing along the button.
     # Button is followed by small blind, then big blind
     n_players = len(players)
-    button += 1
+    #button += 1
+    button = PlayeronButton["button"]
     if n_players > 1:
-        if button == n_players - 1:
+        if button >= n_players - 1:
             sb = 0
             bb = 1
-            button -= 1
+            #button = -1
         elif button == n_players - 2:
             sb = button + 1
             bb = 0
         else:
             sb = button + 1
             bb = button + 2
-        blinds = {sb: sb_value, bb: bb_value}
+        
+        if(n_players != 2):
+            blinds = {sb: sb_value, bb: bb_value}
+        else:
+            blinds = {bb: sb_value, sb: bb_value}
+        print(button, blinds)
         return button, blinds
 
 def play_round(players, game):
@@ -79,6 +100,8 @@ def play_round(players, game):
     # Translate results in new sets of stacks and players
     new_stacks = []
     new_players = []
+    PlayeronButton["player"] = nls.players[PlayeronButton["button"]]
+    Exist = False
     for i, p in enumerate(nls.players):
         if p.stack != 0:
             new_stacks.append(p.stack)
@@ -89,19 +112,35 @@ def play_round(players, game):
                     new_p = t(nls)
                     new_p._stack = p.stack
             new_players.append(new_p)
+            if(p == PlayeronButton["player"]):
+                PlayeronButton["player"] = new_p
+                Exist = True
+        else:
+            del EVhands.player_range[i]
+            
+                
+    Keyarrange()
+    for i, p in enumerate(new_players):
+        if(p == PlayeronButton["player"]):
+            if(i >= len(new_players) - 1): #Increment button
+                PlayeronButton["button"] = 0
+            else:
+                PlayeronButton["button"] = i + 1
+    if(Exist):
+       PlayeronButton["button"] = 0 
+
     return new_stacks, new_players
 
 def play_game(n_rounds, players, game, starting_stacks, button=0):
     # Play n rounds of poker games with the supplied agents
     starting_stakes = get_stakes(players, button)
-
     # Set small blind and big blind
-    sb_value = 2
-    bb_value = 4
+    sb_value = 1
+    bb_value = 2
     blinds = (0, sb_value, bb_value)
     stacks = starting_stacks
-
     for round in range(n_rounds):
+        EVhands.getpositions(button, len(players))
         if round == 0:
             # First round
             game = NoLimitTexasHoldEm(starting_stakes, stacks)
@@ -114,6 +153,7 @@ def play_game(n_rounds, players, game, starting_stacks, button=0):
         print("Round finished with results:")
         for p in players:
             print(type(p), p.stack)
+            
 
         if len(players) == 1:
             # Game is over
@@ -122,3 +162,6 @@ def play_game(n_rounds, players, game, starting_stacks, button=0):
 
         # Update blinds positions
         button, blinds = increment_blinds(players, button, sb_value, bb_value)
+        EVhands.possible_hands.clear()
+        PreFlop.actions.clear()
+        PreFlop.actions["i"] = 2
