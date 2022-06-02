@@ -1,9 +1,8 @@
 from pokerface import NoLimitTexasHoldEm, Stakes
 from heuristic_agent import HeuristicAgent
-from mcts_agent import MCTSAgent
 from random_agent import RandomAgent
 from ev_agent import EVAgent
-from shallow_mcts_test import ShallowMCTS
+from shallow_mcts import ShallowMCTS
 from game_actions import *
 import EVhands
 import PreFlop
