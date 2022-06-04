@@ -2,9 +2,10 @@
 import re
 from chess import Board
 from pandas import array
-from pokerface import Stakes, NoLimitShortDeckHoldEm,NoLimitTexasHoldEm,PokerPlayer,Rank,Suit,RankEvaluator,StandardEvaluator
+from pokerface import *
 from random_agent import RandomAgent
-import numpy as np 
+import numpy as np
+import math
 
 # def encode_cards(cards):
 #     """
@@ -71,8 +72,154 @@ import numpy as np
 
 #     return np.array(board_array)
 
+def hand_combination(hole, board):
+    ranks = [i[0] for i in hole] + [j[0] for j in board]
+    suits = [i[1] for i in hole] + [j[1] for j in board]
+    pairs = list(set([k for k in ranks if ranks.count(k) == 2]))
+
+    # Determine the hand combination
+    if hole[0][0] == hole[1][0]:
+        hand = 'pocket_pair'
+
+    elif len(pairs) == 1:
+        hand = 'one_pair'
+
+    elif len(pairs) == 2:
+        hand = 'two_pair'
+
+    elif list(set([k for k in ranks if ranks.count(k) == 3])):
+        hand = 'three_of_a_kind'
+
+    # hand = 'unmatched_pocket_cards'
+    # hand = 'open_ended_straight_flush_draw'
+    # hand = 'inside_straight'
+
+    elif len(ranks) >= 5:
+        sorted_ranks = sorted(list(set(ranks)))
+        if any(sorted_ranks[4 + i] - sorted_ranks[i] == 4 for i in range(len(sorted_ranks) - 4)):
+            if
+                if sorted_ranks[0] == 10 and sorted_ranks[-1] == 'A':
+                    hand = 'royal_flush'
+                else:
+                    hand = 'straight_flush'
+            else:
+                hand = 'straight'
+
+    else:
+        hand = 'no_pair'
+
+    return hand
+
 def calc_win(hole,board):
-    return 0
+    # https://www.pokerlistings.com/online-poker-odds-calculator#:~:text=To%20calculate%20your%20poker%20equity,(%2B4)%20%3D%2040%25.
+    hand = hand_combination(hole, board)
+
+    # Probability of getting these combinations after 7 cards
+    probabilities = {
+        "royal_flush" : 4324 / math.comb(52, 7),
+        "straight_flush" : 37260 / math.comb(52, 7),
+        "four_of_a_kind" : 224848 / math.comb(52, 7),
+        "full_house" : 3473184 / math.comb(52, 7),
+        "flush" : 4047644 / math.comb(52, 7),
+        "straight" : 6180020 / math.comb(52, 7),
+        "three_of_a_kind" : 6461620 / math.comb(52, 7),
+        "two_pair" : 31433400 / math.comb(52, 7),
+        "one_pair" : 58627800 / math.comb(52, 7),
+        "no_pair" : 23294460 / math.comb(52, 7)
+    }
+
+    # Chance of improving your hand
+    # When fold has happened
+    if len(hole) == 2 & len(board) == 3:
+        if hand == "three_of_a_kind":
+            chance1 = 0.0430
+            chance2 = 0.2780
+            win_rate = probabilities["four_of_a_kind"] * chance1 \
+                       + probabilities["full_house"] * chance2 \
+                       + probabilities["three_of_a_kind"] * (1 - chance1 - chance2)
+
+        elif hand == "pocket_pair" :
+            chance = 0.0840
+            win_rate = probabilities["three_of_a_kind"] * chance \
+                       + probabilities["one_pair"] * (1- chance)
+
+        elif hand == "one_pair":
+            chance1 = 0.1250
+            chance2 = 0.2040
+            win_rate = probabilities["two_pair"] * chance1 \
+                       + probabilities["three_of_a_kind"] * (chance2 - chance1) \
+                       + probabilities["one_pair"] * (1- chance1 - chance2)
+
+        elif hand == "unmatched_pocket_cards":
+            chance = 0.2410
+            win_rate = probabilities["one_pair"] * chance \
+                       + probabilities["no_pair"] * (1 - chance)
+
+        elif hand == "inside_straight":
+            chance1 = 0.1650
+            chance2 = 0.3840
+            win_rate = probabilities["straight"] * chance1 \
+                       + probabilities["one_pair"] * (chance2 - chance1) \
+                       + probabilities["no_pair"] * (1 - chance1 - chance2)
+
+        elif hand == "two_pair":
+            chance = 0.1650
+            win_rate = probabilities["full_house"] * chance \
+                       + probabilities["two_pair"] * (1 - chance)
+
+        elif hand == "open_ended_straight_flush_draw":
+            chance1 = 0.5410
+            chance2 = 0.7232
+            win_rate = probabilities["straight"] + probabilities["flush"] * chance1 \
+                       + probabilities["straight"] + probabilities["flush"] + probabilities["one_pair"]* chance2 \
+                       + probabilities["no_pair"] + (1 - chance1 - chance2)
+
+    # When fold and turn has happened
+    elif len(hole) == 2 & len(board) == 4:
+        if hand == "three_of_a_kind":
+            chance1 = 0.0220
+            chance2 = 0.1520
+            win_rate = probabilities["four_of_a_kind"] * chance1 \
+                       + probabilities["full_house"] * chance2 \
+                       + probabilities["three_of_a_kind"] * (1 - chance1 - chance2)
+
+        elif hand == "pocket_pair" :
+            chance = 0.0430
+            win_rate = probabilities["three_of_a_kind"] * chance \
+                       + probabilities["one_pair"] * (1- chance)
+
+        elif hand == "one_pair":
+            chance1 = 0.0650
+            chance2 = 0.1090
+            win_rate = probabilities["two_pair"] * chance1 \
+                       + probabilities["three_of_a_kind"] * (chance2 - chance1) \
+                       + probabilities["one_pair"] * (1- chance1 - chance2)
+
+        elif hand == "unmatched_pocket_cards":
+            chance = 0.13
+            win_rate = probabilities["one_pair"] * chance \
+                       + probabilities["no_pair"] * (1 - chance)
+
+        elif hand == "inside_straight":
+            chance1 = 0.0870
+            chance2 = 0.2170
+            win_rate = probabilities["straight"] * chance1 \
+                       + probabilities["one_pair"] * (chance2 - chance1) \
+                       + probabilities["no_pair"] * (1 - chance1 - chance2)
+
+        elif hand == "two_pair":
+            chance = 0.0870
+            win_rate = probabilities["full_house"] * chance \
+                       + probabilities["two_pair"] * (1 - chance)
+
+        elif hand == "open_ended_straight_flush_draw":
+            chance1 = 0.3260
+            chance2 = 0.4773
+            win_rate = probabilities["straight"] + probabilities["flush"]  * chance1 \
+                       + probabilities["straight"] + probabilities["flush"] + probabilities["one_pair"] * chance2 \
+                       + probabilities["no_pair"] + (1 - chance1 - chance2)
+
+    return win_rate
 
 def get_opponent_stacks(game,player,max=5,starting_stack=200):
     """
