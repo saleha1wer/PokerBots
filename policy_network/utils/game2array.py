@@ -75,6 +75,15 @@ import math
 def hand_combination(hole, board):
     ranks = [i[0] for i in hole] + [j[0] for j in board]
     suits = [i[1] for i in hole] + [j[1] for j in board]
+    for i in range(len(ranks)):
+        if ranks[i] == 'J':
+            ranks[i] = 11
+        elif ranks[i] == 'Q':
+            ranks[i] = 12
+        elif ranks[i] == 'H':
+            ranks[i] = 13
+        elif ranks[i] == 'A':
+            ranks[i] = 14
     pairs = list(set([k for k in ranks if ranks.count(k) == 2]))
 
     # Determine the hand combination
@@ -90,23 +99,22 @@ def hand_combination(hole, board):
     elif list(set([k for k in ranks if ranks.count(k) == 3])):
         hand = 'three_of_a_kind'
 
-    # hand = 'unmatched_pocket_cards'
-    # hand = 'open_ended_straight_flush_draw'
-    # hand = 'inside_straight'
-
-    elif len(ranks) >= 5:
+    elif len(ranks) >= 4:
         sorted_ranks = sorted(list(set(ranks)))
-        if any(sorted_ranks[4 + i] - sorted_ranks[i] == 4 for i in range(len(sorted_ranks) - 4)):
-            if
-                if sorted_ranks[0] == 10 and sorted_ranks[-1] == 'A':
-                    hand = 'royal_flush'
-                else:
-                    hand = 'straight_flush'
-            else:
-                hand = 'straight'
 
-    else:
-        hand = 'no_pair'
+        if any(sorted_ranks[3 + i] - sorted_ranks[i] == 3 for i in range(len(sorted_ranks) - 3)) and # suits are equal:
+            hand = 'open_ended_straight_flush_draw'
+
+        # When we have four consecutive numbers OR three consecutive numbers, break, 1 more OR two consecutive numbers, break, 2 more
+        elif any(sorted_ranks[3 + i] - sorted_ranks[i] == 3 for i in range(len(sorted_ranks) - 3)) or
+
+            # When we have three consecutive numbers, break, 1 more
+            any(ranks[2 + i] - ranks[i] == 2 for i in range(len(ranks) - 2)) and
+
+            # When we have two consecutive numbers, break, 2 more
+
+    elif hole[0][0] != hole[1][0]:
+        hand = 'unmatched_pocket_cards'
 
     return hand
 
@@ -218,6 +226,11 @@ def calc_win(hole,board):
             win_rate = probabilities["straight"] + probabilities["flush"]  * chance1 \
                        + probabilities["straight"] + probabilities["flush"] + probabilities["one_pair"] * chance2 \
                        + probabilities["no_pair"] + (1 - chance1 - chance2)
+
+    # When fold, turn, and river has happened
+    elif len(hole) == 2 & len(board) == 5:
+        # Win rate is same as hand strength when all cards are shown
+        win_rate = 1 - (float(StandardEvaluator().evaluate_hand(hole, board).index) / 7462)
 
     return win_rate
 
