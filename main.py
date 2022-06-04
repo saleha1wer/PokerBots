@@ -7,14 +7,15 @@ from ev_agent import EVAgent
 from shallow_mcts import ShallowMCTS
 import EVhands
 
+
 button = 0
 no_players = 4
 if(no_players == 2):
-    stakes = Stakes(0, {button + 1: 1, button: 2})
+    stakes = Stakes(0, {button: 1, button+1: 2})
 else:
     stakes = Stakes(0, {button + 1: 1, button + 2: 2})
 starting_stacks = 200, 200, 200, 200
-n_rounds = 100
+n_rounds = 1
 
 #nls = NoLimitShortDeckHoldEm(stakes,starting_stacks)
 nls = NoLimitTexasHoldEm(stakes,starting_stacks)
