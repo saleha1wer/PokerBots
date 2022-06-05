@@ -1,76 +1,16 @@
 
-import re
-from chess import Board
 from pandas import array
-from pokerface import *
-from random_agent import RandomAgent
+from pokerface import Stage, Stakes, NoLimitShortDeckHoldEm,NoLimitTexasHoldEm,PokerPlayer,Rank,Suit,RankEvaluator,StandardEvaluator,Card,PokerPlayer,stages
 import numpy as np
+import os
+import multiprocessing as mp
+import time
 import math
 
-# def encode_cards(cards):
-#     """
-#     Encodes a players cards with one-hot encoding
-#     """
-#     cards_array = []
-#     for card in cards:
-#         card_array = np.zeros(14)
-#         if card.rank == Rank.ACE: 
-#             idx = 12
-#         elif card.rank == Rank.KING:
-#             idx = 11
-#         elif card.rank == Rank.QUEEN:
-#             idx = 10
-#         elif card.rank == Rank.JACK:
-#             idx = 9
-#         elif card.rank == Rank.TEN:
-#             idx = 8
-#         elif card.rank == Rank.NINE:
-#             idx = 7
-#         elif card.rank == Rank.EIGHT:
-#             idx = 6
-#         elif card.rank == Rank.SEVEN:
-#             idx = 5
-#         elif card.rank == Rank.SIX:
-#             idx = 4
-#         elif card.rank == Rank.FIVE:
-#             idx = 3
-#         elif card.rank == Rank.FOUR:
-#             idx = 2
-#         elif card.rank == Rank.THREE:
-#             idx = 1
-#         elif card.rank == Rank.TWO:
-#             idx = 0
-#         if card.suit == Suit.CLUB:
-#             suit_value = 0
-#         elif card.suit == Suit.SPADE:
-#             suit_value = 1
-#         elif card.suit == Suit.DIAMOND:
-#             suit_value = 2
-#         elif card.suit == Suit.HEART:
-#             suit_value = 3
-#         card_array[idx] = 1
-#         card_array[13] = suit_value
-#         cards_array.append(card_array)
-#     return np.array(cards_array)
-
-# def encode_board(board):
-#     """
-#     Encodes the cards on the board with one-hot encoding
-#     """
-#     board = list(board)
-#     board_array = []
-
-#     if len(board) < 5:
-#         to_go = 5 - len(board)
-#         no_card = np.array([-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1])
-#         for i in range(to_go):
-#             board_array.append(no_card)
-            
-#     board_encoded = encode_cards(board)
-#     for card in board_encoded:
-#         board_array.append(card)
-
-#     return np.array(board_array)
+class Player(PokerPlayer):
+    def __init__(self, game,agent_id):
+        super().__init__(game)
+        self.id = agent_id
 
 def hand_combination(hole, board):
     ranks = [i[0] for i in hole] + [j[0] for j in board]
@@ -99,27 +39,26 @@ def hand_combination(hole, board):
     elif list(set([k for k in ranks if ranks.count(k) == 3])):
         hand = 'three_of_a_kind'
 
-    elif len(ranks) >= 4:
-        sorted_ranks = sorted(list(set(ranks)))
+    # elif len(ranks) >= 4:
+    #     sorted_ranks = sorted(list(set(ranks)))
 
-        if any(sorted_ranks[3 + i] - sorted_ranks[i] == 3 for i in range(len(sorted_ranks) - 3)) and # suits are equal:
-            hand = 'open_ended_straight_flush_draw'
+    #     if any(sorted_ranks[3 + i] - sorted_ranks[i] == 3 for i in range(len(sorted_ranks) - 3)) and # suits are equal:
+    #         hand = 'open_ended_straight_flush_draw'
+    #     # When we have four consecutive numbers OR three consecutive numbers, break, 1 more OR two consecutive numbers, break, 2 more
+    #     elif any(sorted_ranks[3 + i] - sorted_ranks[i] == 3 for i in range(len(sorted_ranks) - 3)) or
+    #         # When we have three consecutive numbers, break, 1 more
+    #         any(ranks[2 + i] - ranks[i] == 2 for i in range(len(ranks) - 2)) and
+    #         # When we have two consecutive numbers, break, 2 more
 
-        # When we have four consecutive numbers OR three consecutive numbers, break, 1 more OR two consecutive numbers, break, 2 more
-        elif any(sorted_ranks[3 + i] - sorted_ranks[i] == 3 for i in range(len(sorted_ranks) - 3)) or
-
-            # When we have three consecutive numbers, break, 1 more
-            any(ranks[2 + i] - ranks[i] == 2 for i in range(len(ranks) - 2)) and
-
-            # When we have two consecutive numbers, break, 2 more
-
-    elif hole[0][0] != hole[1][0]:
-        hand = 'unmatched_pocket_cards'
+    # elif hole[0][0] != hole[1][0]:
+    #     hand = 'unmatched_pocket_cards'
 
     return hand
 
-def calc_win(hole,board):
+def win_rate(hole,board):
     # https://www.pokerlistings.com/online-poker-odds-calculator#:~:text=To%20calculate%20your%20poker%20equity,(%2B4)%20%3D%2040%25.
+    hole = [[i.rank,i.suit] for i in hole]
+    board = [[i.rank,i.suit] for i in board]
     hand = hand_combination(hole, board)
 
     # Probability of getting these combinations after 7 cards
@@ -234,6 +173,106 @@ def calc_win(hole,board):
 
     return win_rate
 
+def deal_cards(game):
+    # Deals cards at the start of the game
+    if game.stage != None:
+        while game.stage.is_dealing_stage():
+            if not game.nature.can_deal_hole():
+                break
+            game.nature.deal_hole()
+            if game.stage == None: return game
+    return game
+
+def deal_board(game):
+    # Deals board cards during the game
+    if game.stage != None:
+        while game.stage.is_board_dealing_stage():
+            game.nature.deal_board()
+            if game.stage == None: return game
+    return game
+
+def simulate_dealing(hole,board,n_opp):
+    our_cards = list(hole)
+    board = list(board)
+    temp = np.ones(n_opp+1) *200
+    stst = tuple(temp.tolist())
+    game = NoLimitTexasHoldEm(Stakes(0, (1, 2)), stst)
+    our_player = Player(game,0)
+    opps = [Player(game,i+1) for i in range(n_opp)]
+    #Deal hole cards
+    game.nature.deal_hole(our_cards)
+    while isinstance(game.stage,stages.HoleDealingStage):
+        if game.nature.can_deal_hole():
+            game.nature.deal_hole()
+        else:
+            break
+    # Checks
+    for i in range(n_opp+1):
+        game.actor.check_call()
+    # Deal flop
+    if len(board) > 0:
+        game.nature.deal_board(board[:3])
+    else:
+        game.nature.deal_board()
+    # Checks
+    for i in range(n_opp+1):
+        game.actor.check_call()
+    # Deal turn
+    if len(board) > 3:
+        game.nature.deal_board([board[3]])
+    else:
+        game.nature.deal_board()
+    # Checks
+    for i in range(n_opp+1):
+        game.actor.check_call()
+    # Deal river
+    if len(board) > 4:
+        game.nature.deal_board([board[4]])
+    else:
+        game.nature.deal_board()
+    # Checks
+    for i in range(n_opp+1):
+        game.actor.check_call()
+
+    for p in game.players:
+        p.showdown()
+    
+    sts = [p.stack for p in game.players]
+
+    if np.argmax(sts) == 0:
+        return 1
+    else:
+        return 0
+
+
+def temp_func(hole,board,n_opps):
+    try: 
+        win = simulate_dealing(hole,board,n_opps)
+    except ValueError:
+        win = 1/n_opps
+    return win
+
+def calc_win(hole,board,n_opps,n_sims=5,m_p=False):
+    # n_cores = os.environ['SLURM_JOB_CPUS_PER_NODE'] # if on alice
+    total = 0
+    if m_p: 
+        n_cores = os.cpu_count()
+        pool = mp.Pool(processes=int(n_cores))
+        total = pool.starmap(temp_func, [(hole,board,n_opps) for i in range(n_sims)])
+        pool.close()
+        pool.join()
+        total = sum(total)
+    else:
+        for i in range(n_sims):
+            try:
+                win = simulate_dealing(hole,board,n_opps)
+            except ValueError:
+                n_sims = n_sims - 1
+                win = 0
+            total = total + win
+    return (total/n_sims)*0.25 + 0.75* win_rate(hole,board)
+
+
 def get_opponent_stacks(game,player,max=5,starting_stack=200):
     """
     returns an array of the opponent stacks of maximum 5 opponents
@@ -275,6 +314,32 @@ def get_opponent_bets(game,player,max=5,starting_stack=200):
                 opponent_bets[idx] = (players[idx].total - players[idx].stack) /starting_stack
     return opponent_bets
 
+def evaluate_holecards(cards):
+    """
+    calculates hand cards strength in pre flop positions. 
+    could be improved
+    """
+    cards = list(cards)
+    if cards[0].suit == cards[1].suit:
+        suited =0.25
+    else:
+        suited = 0
+    if cards[0].rank == cards[1].rank:
+        pockets = True
+    else:
+        pockets = False
+    diff = abs(cards[0].rank.index - cards[1].rank.index)
+    if diff <3:
+        cont = 0.15
+    elif diff < 5:
+        cont = 0.1
+    else:
+        cont = 0
+    if pockets:
+        pocket_hands = [0.5,0.5,0.55,0.6,0.65,0.7,0.8,0.8,0.85,0.85,0.9,0.95,1]
+        return pocket_hands[cards[0].rank.index]
+    return min(1,suited + ((cards[0].rank.index/12)/2.5 + (cards[1].rank.index/12)/2.5) + cont)
+
 
 def game2array(game,player,max_players=5,starting_stack=200):
     """ 
@@ -289,16 +354,22 @@ def game2array(game,player,max_players=5,starting_stack=200):
     """
     # player_cards = encode_cards(player.hole)
     # board = encode_board(game.board)
-    win_percentage = calc_win(player.hole, game.board)
+    n_opps = 0
+    for p in game.players:
+        if p.is_active() and p != player:
+            n_opps = n_opps + 1
+    win_percentage = calc_win(player.hole, game.board,n_opps,n_sims=50)
     try :
         hand_strength = 1 - (float(StandardEvaluator().evaluate_hand(player.hole,game.board).index)/7462)
     except:
-        print(player.hole,game.board)
-        print('hand strength failed, board length: ', len(game.board))
-        hand_strength = 0.5
+        hand_strength = evaluate_holecards(player.hole)
     players_in_hand = get_players_in_hand(game,player,max=max_players)
     opponent_stacks = get_opponent_stacks(game,player,max=max_players, starting_stack=starting_stack)
-    pos = (player.index)/len(game.players)
+    if player.index == 0 or player.index == 1:
+        pos = len(game.players) - player.index
+    else: 
+        pos = player.index - 2
+    pos = pos/len(game.players)
     if player.can_check_call():
         to_call = player.check_call_amount/starting_stack
     else:
@@ -319,3 +390,37 @@ def game2array(game,player,max_players=5,starting_stack=200):
     array_two.extend(opponent_stacks)
     # array_two = np.vstack([array_two,opponent_stacks])
     return np.array(array_one),np.array(array_two)
+
+# print(evaluate_holecards(c))
+
+# game = NoLimitTexasHoldEm(Stakes(0, (1, 2)), (200, 200, 200))
+
+# our_player = PokerPlayer(game)
+# opp =  PokerPlayer(game)
+
+# print(game.stage)
+
+# print(game.stage)
+if __name__ == '__main__': 
+
+    c = [Card(Rank.ACE,Suit.SPADE),Card(Rank.ACE,Suit.DIAMOND)]
+    board = []
+    print(calc_win(c,board,3))
+
+    # n_sims =5000
+    # start = time.time()
+    # tot = 0
+    # res = calc_win(c,board,4,n_sims=n_sims,m_p=True)
+    # tot = tot + res
+    # now = time.time()
+    # print('Average win rate found: ', res)
+    # print('Time taken with mp: ', now-start)
+    # start = time.time()
+    # tot = 0
+    # res = calc_win(c,board,4,n_sims=n_sims,m_p=False)
+    # tot = tot + res
+    # now = time.time()
+    # print('Average win rate found: ', res)
+    # print('Time taken without mp: ', now-start)
+
+    
