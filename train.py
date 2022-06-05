@@ -1,7 +1,4 @@
 
-import random
-from turtle import st
-
 from policy_network.network import Network
 from policy_network.utils.game2array import game2array
 import numpy as np 
@@ -73,7 +70,7 @@ def simulate_game(players):
         p_id = p.id
         new_p = NetworkAgent(game,net,p_id)
         players.append(new_p)
-    game_info,opp_info,act_dis, winner_id = play_game(players,game,starting_stacks,button,max_rounds=5)
+    game_info,opp_info,act_dis, winner_id = play_game(players,game,starting_stacks,button,max_rounds=25)
     return game_info,opp_info,act_dis, winner_id
 
 def simulate_games(n_games, players):
@@ -99,7 +96,7 @@ def simulate_games(n_games, players):
 def save_hof(list_of_players):
     for idx,player in enumerate(list_of_players):
         net = player.network.network 
-        net.save('policy_network/hall_of_fame/player'+str(idx)+'.tf=')
+        net.save('policy_network/hall_of_fame/player'+str(idx)+'.tf')
 
 def gather_initial(num): # --> (game_info,opp_info,act_dis), hall_of_fame
     """
@@ -124,25 +121,27 @@ def gather_initial(num): # --> (game_info,opp_info,act_dis), hall_of_fame
     games_matrix, opp_matrix,act_dis_matrix = np.vstack(games_matrix),np.vstack(opp_matrix),np.vstack(act_dis_matrix)
     return games_matrix, opp_matrix,act_dis_matrix, hall_of_fame
 
-def gather_hof_vs_random(hall_of_fame,original_arrays): # --> (game_info,opp_info,act_dis)
-    pass
-
 def train(arrays_tuple): # --> Policy Network
-    pass
+    policy_network = Network([(7),(8)],5)
+    policy_network.initialize_network()
+    games_matrix,opp_matrix,act_dis_matrix = arrays_tuple
+    policy_network.train_network(games_matrix,opp_matrix,act_dis_matrix,50)
+    policy_network.network.save('policy_network/saved_models/policy_net.tf')
+    return policy_network
 
 def policy_network_self_play(policy_network, N=None): # --> Policy Network
     pass
 
 def main():
-    game_info,opp_info,act_dis, hall_of_fame = gather_initial()
-    (game_info,opp_info,act_dis) = gather_hof_vs_random(hall_of_fame,(game_info,opp_info,act_dis))
-    policy_network = train((game_info,opp_info,act_dis))
+    games_matrix, opp_matrix,act_dis_matrix, hall_of_fame = gather_initial(1000)
+    policy_network = train((games_matrix, opp_matrix,act_dis_matrix))
     # test policy network, save plots, save network 
     new_policy_network = policy_network_self_play(policy_network)
     # test policy network, save plots, save network 
 
 
-games_matrix, opp_matrix,act_dis_matrix, hall_of_fame = gather_initial(10)
+games_matrix, opp_matrix,act_dis_matrix, hall_of_fame = gather_initial(100)
+print(act_dis_matrix)
 save_hof(hall_of_fame)
 policy_network = Network([(7),(8)],5)
 policy_network.initialize_network()
@@ -152,69 +151,3 @@ policy_network.network.save('policy_network/saved_models/policy_net.tf')
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# testing script - just testing if network agent runs fine 
-# commented code tests the training of the network
-
-# button = 0
-# no_players = 4
-# if(no_players == 2):
-#     stakes = Stakes(0, {button+1: 1, button: 2})
-# else:
-#     stakes = Stakes(0, {button + 1: 1, button + 2: 2})
-# starting_stacks = 200, 200, 200, 200
-# n_rounds = 100
-# net = Network([(7),(10)],4)
-# net.initialize_network()
-# #nls = NoLimitShortDeckHoldEm(stakes,starting_stacks)
-# nls = NoLimitTexasHoldEm(stakes,starting_stacks)
-# ra1 = RandomAgent(nls)
-# ra3 = RandomAgent(nls)
-# ra4 = RandomAgent(nls)
-# na1 = NetworkAgent(nls,net)
-# players = [ra1, ra3, ra4,na1]
-# ranges = [200,200,200,200]
-
-# for i in range(len(ranges)):
-#     print(i)
-#     EVhands.player_range[i] = ranges[i]
-#     print(EVhands.player_range)
-
-# play_game(n_rounds, players, nls, starting_stacks, button)
-
-
-    
-# games = []
-# opps = []
-# act_ds = []
-# for i in range(3):
-#     my_player = players[1]
-#     stacks, players = play_round(players,nls)
-#     game_info,opp_info = game2array(nls,my_player)
-#     games.append(game_info)
-#     opps.append(opp_info)
-#     act_ds.append(np.random.uniform(size=4))
-#     starting_stacks = stacks
-#     nls = NoLimitTexasHoldEm(Stakes(0, {button + 1: 1, button: 2}), starting_stacks)
-# print(games[0])
-# print(games[0].shape)
-
-# print(opps[0])
-# print(opps[0].shape)
-
-
-# net.train_network(np.array(games),np.array(opps),np.array(act_ds),20)
