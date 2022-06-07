@@ -347,6 +347,9 @@ class EVAgent(PokerPlayer):
                             if(PreFlop.actions[my_index] == 'call'):
                                 CallRange = PreFlop.RangeFacing3bet[my_position,Facing_position,"limp/call"]
                                 RaiseRange = PreFlop.RangeFacing3bet[my_position,Facing_position,"limp/raise"]
+                            else:
+                                CallRange = PreFlop.RangeFacing3bet[my_position,Facing_position,"call"]
+                                RaiseRange = PreFlop.RangeFacing3bet[my_position,Facing_position,"raise"]
                 else:
                     CallRange = ""
                     RaiseRange = PreFlop.RangeFacing5bet[my_position,Facing_position,"All-in"]
