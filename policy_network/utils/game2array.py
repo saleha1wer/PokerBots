@@ -72,9 +72,40 @@ import math
 
 #     return np.array(board_array)
 
+def takeFirst(elem):
+    return elem[0]
+
+
+def StraightDraw(cards):
+    ranking = []
+    draw_type = 0  # No draw
+    for card in cards:
+        rank = self.StraightRank(card[0])
+        ranking.append(rank)
+    minimum = [12, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+    maximum = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+    max_count = 0
+
+    for i in range(len(minimum)):
+        count = 0
+        for j in range(minimum[i], maximum[i] + 1):
+            for k in ranking:
+                if (j == k):
+                    count += 1
+            if (count > max_count):
+                max_count = count
+
+    if (max_count == 4):
+        ranking.sort()
+        for i in range(len(ranking) - 2):  # Does not include double end 1 - 3 - 1 or 2 - 2 - 2
+            if (ranking[i] == ranking[i + 1] - 1 and ranking[i + 1] == ranking[i + 2] - 1 and ranking[i + 2] != 12):
+                draw_type = 4  # Open ended straight draw
+            else:
+                draw_type = 2  # Inside straight draw
+    return draw_type
+
 def hand_combination(hole, board):
     ranks = [i[0] for i in hole] + [j[0] for j in board]
-    suits = [i[1] for i in hole] + [j[1] for j in board]
     for i in range(len(ranks)):
         if ranks[i] == 'J':
             ranks[i] = 11
@@ -84,6 +115,8 @@ def hand_combination(hole, board):
             ranks[i] = 13
         elif ranks[i] == 'A':
             ranks[i] = 14
+        else:
+            ranks[i] = int(ranks[i])
     pairs = list(set([k for k in ranks if ranks.count(k) == 2]))
 
     # Determine the hand combination
@@ -100,18 +133,11 @@ def hand_combination(hole, board):
         hand = 'three_of_a_kind'
 
     elif len(ranks) >= 4:
-        sorted_ranks = sorted(list(set(ranks)))
-
-        if any(sorted_ranks[3 + i] - sorted_ranks[i] == 3 for i in range(len(sorted_ranks) - 3)) and # suits are equal:
+        if StraightDraw(ranks) == 4:
             hand = 'open_ended_straight_flush_draw'
 
-        # When we have four consecutive numbers OR three consecutive numbers, break, 1 more OR two consecutive numbers, break, 2 more
-        elif any(sorted_ranks[3 + i] - sorted_ranks[i] == 3 for i in range(len(sorted_ranks) - 3)) or
-
-            # When we have three consecutive numbers, break, 1 more
-            any(ranks[2 + i] - ranks[i] == 2 for i in range(len(ranks) - 2)) and
-
-            # When we have two consecutive numbers, break, 2 more
+        elif StraightDraw(ranks) == 2:
+            hand = 'insight_straight'
 
     elif hole[0][0] != hole[1][0]:
         hand = 'unmatched_pocket_cards'
