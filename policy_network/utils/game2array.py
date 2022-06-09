@@ -15,12 +15,11 @@ class Player(PokerPlayer):
 def takeFirst(elem):
     return elem[0]
 
-
 def StraightDraw(cards):
     ranking = []
     draw_type = 0  # No draw
     for card in cards:
-        rank = self.StraightRank(card[0])
+        rank = card - 2
         ranking.append(rank)
     minimum = [12, 0, 1, 2, 3, 4, 5, 6, 7, 8]
     maximum = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
