@@ -19,8 +19,9 @@ from shallow_mcts import ShallowMCTS
 from random_agent import RandomAgent
 from ev_agent import EVAgent
 from callbot_agent imoort CallbotAgent
-
 from pokerface import Stakes,NoLimitTexasHoldEm
+
+# initiate game
 stakes = Stakes(0, (1, 2))
 starting_stacks = 200, 200, 200,200
 nls = NoLimitShortDeckHoldEm(stakes, starting_stacks)
@@ -31,3 +32,4 @@ ev = EVAgent(nls)  # initiate EV agent
 cb = CallbotAgent(nls) # initiate call-bot agent
 ```
 * To initiate a Network Agent:
+*
