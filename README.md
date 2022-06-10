@@ -46,5 +46,5 @@ network.network = model
 net_agent = NetworkAgent(nls,network,0) # initiate network agent
 # to initialize random network: 
 network.initialize_network()
-net_agent = NetworkAgent(nls,network,0) # initiate network agent
+net_agent = NetworkAgent(nls,network,1) # initiate network agent
 ```
