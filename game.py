@@ -1,11 +1,15 @@
 from pokerface import NoLimitTexasHoldEm, Stakes
 from heuristic_agent import HeuristicAgent
 from random_agent import RandomAgent
+from callbot_agent import CallbotAgent
 from ev_agent import EVAgent
 from shallow_mcts import ShallowMCTS
 from game_actions import *
 import EVhands
 import PreFlop
+
+from policy_network.network_agent import NetworkAgent
+from policy_network.network import Network
 
 PlayeronButton = {
     "button":0
@@ -104,12 +108,17 @@ def play_round(players, game):
     for i, p in enumerate(nls.players):
         if p.stack != 0:
             new_stacks.append(p.stack)
-            for t in [RandomAgent, HeuristicAgent, MCTSAgent, EVAgent, ShallowMCTS]: # DO NOT FORGET TO ADD NEW BOTS HERE
+            for t in [RandomAgent, HeuristicAgent, EVAgent, ShallowMCTS, CallbotAgent]: # DO NOT FORGET TO ADD NEW BOTS HERE
                 if isinstance(p, t):
                     # If you want to transfer information between the old and new agent,
                     # besides the stack, do it here!
                     new_p = t(nls)
                     new_p._stack = p.stack
+
+            if isinstance(p, NetworkAgent):
+                new_p = NetworkAgent(nls, p.network, p.id)
+                new_p._stack = p.stack
+
             new_players.append(new_p)
             if(p == PlayeronButton["player"]):
                 PlayeronButton["player"] = new_p

@@ -1,19 +1,28 @@
 from game import play_game
 from pokerface import Stakes, NoLimitShortDeckHoldEm,NoLimitTexasHoldEm
 from random_agent import RandomAgent
+from callbot_agent import CallbotAgent
 from heuristic_agent import HeuristicAgent
 #from mcts_agent import MCTSAgent
 from ev_agent import EVAgent
 from shallow_mcts import ShallowMCTS
+from policy_network.network_agent import NetworkAgent
+from policy_network.network import Network
+
+import sklearn
+import tensorflow as tf
+import keras
+
 import EVhands
 
 import sys
 
 # A few constants
 NUM_RANDOM_OPPONENTS = 2
-NUM_ROUNDS = 20
+NUM_ROUNDS = 100
 NUM_GAMES = 1
 
+#TODO add callbot
 def randomOpponents(numOpponents, agentType, numRounds):
     button = 0
     no_players = numOpponents + 1
@@ -39,8 +48,9 @@ def randomOpponents(numOpponents, agentType, numRounds):
 
     # Add the "smarter" agent
     # NEEDS ADDITION OF POLICY NETWORK
-    if agentType == "HeuristicAgent":
-        players.append(HeuristicAgent(nls))
+    if agentType == "PolicyAgent":
+        players.append(PolicyAgent(nls))
+        print("TODO not implemented in experiments")
     elif agentType == "EVAgent":
         players.append(EVAgent(nls))
     elif agentType == "ShallowMCTS":
@@ -49,7 +59,6 @@ def randomOpponents(numOpponents, agentType, numRounds):
         print("Invalid agentType")
         exit()
 
-    #ranges = [100,100,100,30]
     ranges = []
     for i in range(numOpponents):
         ranges.append(100)
@@ -71,34 +80,41 @@ def agentVsAgent(agentType1, agentType2, numRounds):
     starting_stacks = 200, 200
 
     nls = NoLimitTexasHoldEm(stakes,starting_stacks)
-
+    net = Network([(7), (2)], 5)
+    net.network = keras.models.load_model("policy_network/saved_models/max_1_opp/trained_EVandRandom/final.tf")
 
     # Add the first agent
-    # NEEDS ADDITION OF POLICY NETWORK
     players = []
-    if agentType1 == "HeuristicAgent":
-        players.append(HeuristicAgent(nls))
+    if agentType1 == "CallbotAgent":
+        players.append(CallbotAgent(nls))
     elif agentType1 == "EVAgent":
         players.append(EVAgent(nls))
     elif agentType1 == "ShallowMCTS":
         players.append(ShallowMCTS(nls))
+    elif agentType1 == "RandomAgent":
+        players.append(RandomAgent(nls))
+    elif agentType1 == "NetworkAgent":
+        players.append(NetworkAgent(nls, net, 0))
     else:
         print("Invalid agentType")
         exit()
 
     # Add the second agent
-    # ALSO NEEDS ADDITION OF POLICY NETWORK
-    if agentType2 == "HeuristicAgent":
-        players.append(HeuristicAgent(nls))
+    if agentType2 == "CallbotAgent":
+        players.append(CallbotAgent(nls))
     elif agentType2 == "EVAgent":
         players.append(EVAgent(nls))
     elif agentType2 == "ShallowMCTS":
         players.append(ShallowMCTS(nls))
+    elif agentType2 == "RandomAgent":
+        players.append(RandomAgent(nls))
+    elif agentType2 == "NetworkAgent":
+        players.append(NetworkAgent(nls, net, 0))
     else:
         print("Invalid agentType")
         exit()
 
-    ranges = [100, 100] # NOT SURE WHAT RANGES TO GIVE THE AGENTS PLAYING AGAINST EACHOTHER
+    ranges = [100, 50] 
     
     for i in range(len(ranges)):
         #print(i)
@@ -122,15 +138,15 @@ def allAgentSkirmish(numRounds):
     nls = NoLimitTexasHoldEm(stakes,starting_stacks)
 
     # Add all agents
-    # NEEDS ADDITION OF POLICY NETWORK
+    # NEEDS ADDITION OF POLICY NETWORK if working against SMCTS
     ra = RandomAgent(nls)
-    ha = HeuristicAgent(nls)
-    ev = EVAgent(nls)
+    ca = CallbotAgent(nls)
     smcts = ShallowMCTS(nls)
+    ev = EVAgent(nls)
     
-    players = [ra, ha, ev, smcts]
+    players = [ra, ca, smcts, ev]
 
-    ranges = [100,100,100,30] # NOT SURE WHAT RANGES TO GIVE THE AGENTS PLAYING AGAINST EACHOTHER
+    ranges = [100,100,50,50] 
     for i in range(len(ranges)):
         #print(i)
         EVhands.player_range[i] = ranges[i]
@@ -140,19 +156,8 @@ def allAgentSkirmish(numRounds):
 if __name__ == "__main__":
     for i in range(NUM_GAMES):
         print("START OF GAME NUMBER: {}".format(i))
-        randomOpponents(NUM_RANDOM_OPPONENTS, "HeuristicAgent", NUM_ROUNDS)
-        #agentVsAgent("EVAgent", "ShallowMCTS", NUM_ROUNDS)
-        #allAgentSkirmish(NUM_ROUNDS)
+        #randomOpponents(NUM_RANDOM_OPPONENTS, "ShallowMCTS", NUM_ROUNDS)
+        #agentVsAgent("RandomAgent", "EVAgent", NUM_ROUNDS)
+        allAgentSkirmish(NUM_ROUNDS)
         print("END OF GAME NUMBER: {}".format(i))
-
-    #for i in range(10):
-    #    try:
-    #        randomOpponents(3, "HeuristicAgent", 10)
-    #    except ValueError:
-    #        print("VALUE ERROR DISREGARD GAME")
-    #        exit()
-    #    except UnboundLocalError:
-    #        print("UNBOUND LOCAL ERROR DISREGARD GAME")
-    #        exit()
-    #    print("{}-------------------------------------".format(i))
 
