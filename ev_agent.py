@@ -1,12 +1,3 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Tue May  3 14:06:49 2022
-
-@author: NatBr
-"""
-
-#https://www.splitsuit.com/simple-poker-expected-value-formula
-
 from pokerface import PokerPlayer, Rank, Suit
 import eval7
 import EVhands
@@ -152,95 +143,8 @@ class EVAgent(PokerPlayer):
                             f = self.fold
                             print("EV:\t\t",f.__name__)
                             f()
-                #self.HandEliminator()
             else:
                 pass
-            
-    def HandEliminator(self): #The idea behind this function would be to narrow down ranges for post-flop play. This Function is not used
-        for i,player in enumerate(self.game.players):
-            if(player.is_active() and player != self.game.actor):
-                possible_hands = []
-                for i in EVhands.possible_hands[i]:
-                    cards = []
-                    cards2 = []
-                    cards.append(i[0])
-                    cards.append(i[1])
-                    cards2.append(i[0])
-                    cards2.append(i[1])
-                    for card in self.game.board:
-                        new_card = self.ObjecttoString(card)
-                        cards.append(new_card)
-                    hand = [eval7.Card(s) for s in cards]
-                    OpHand = eval7.evaluate(hand)
-                    HandType = eval7.handtype(OpHand)
-                    draw_type = self.StraightDraw(cards)
-                    FlushCount = self.FlushDraw(cards)
-                    if(len(self.game.board) == 3): #What hands would the opp continue with on the flop?
-                        if(HandType == "Pair" or HandType == "Two Pair" or HandType == "Trips" or HandType == "Straight" or HandType == "Flush" or HandType == "Full House" or HandType == "Straight Flush" or FlushCount >= 3 or draw_type > 0):
-                            print(HandType)
-                            print(cards2)
-                            #possible_hands.append(cards2)
-                    if(len(self.game.board) == 4): #What hands would the opp continue with on the turn?
-                        if(HandType == "Pair"):
-                            print(HandType)
-                            print(cards2)
-                    if(len(self.game.board) == 5): #What hands would the opp call with on river?
-                        if(HandType == "Pair"):
-                            print(HandType)
-                #Save all possible hands that call to key
-                #EVhands.possible_hands[i] = possible_hands
-        return
-
-    def StraightDraw(self, cards): #This function is not used but would be able to check for possible straights on future streets
-        ranking = []
-        draw_type = 0 # No draw
-        for card in cards:
-            rank = self.StraightRank(card[0])
-            ranking.append(rank)
-        minimum = [12,0,1,2,3,4,5,6,7,8]
-        maximum = [3,4,5,6,7,8,9,10,11,12]
-        max_count = 0
-        for i in range(len(minimum)):
-            count = 0
-            for j in range(minimum[i],maximum[i]+1):
-                for k in ranking:
-                    if(j == k):
-                        count += 1
-                if(count > max_count):
-                    max_count = count
-        if(max_count == 2 and len(ranking) == 6):
-            count = 0
-            for i in range(len(ranking)-1):
-                if(ranking[i] == ranking[i+1]-1):
-                    count += 1
-            if(count == 3):
-                draw_type = 3 # Double ended straight draw
-        if(max_count == 3):
-            for i in range(1,len(ranking)-2):
-                if(ranking[i] == ranking[i+1]-1 and ranking[i+1] == ranking[i+2]-1 and ranking[i] == ranking[i-1]+2 and ranking[i+2] == ranking[i+3]-2):
-                    draw_type = 3 #Double ended straight draw
-                elif(ranking[i] == ranking[i+1]-1 and ranking[i+1] == ranking[i+2]-1 and (ranking[i] == ranking[i-1]+1 or ranking[i+2] == ranking[i+3]-1)):
-                    draw_type = 1 #Gutshot straight draw
-        if(max_count == 4):
-            ranking.sort()
-            for i in range(len(ranking)-2): #Does not include double end 1 - 3 - 1 or 2 - 2 - 2
-                if(ranking[i] == ranking[i+1]-1 and ranking[i+1] == ranking[i+2]-1 and ranking[i+2] != 12):
-                    draw_type = 4 #Open ended straight draw
-                else:
-                    draw_type = 2 #Inside straight draw
-                
-        return draw_type
-    
-    def FlushDraw(self, cards): #This function is not used but would be used to check for possible flushes on future streets
-        suits = []
-        for card in cards:
-            suit = self.FlushRank(card[1])
-            suits.append(suit)
-        count = 0
-        for i in range(4):
-            if(suits.count(i) > count):
-                count = suits.count(i)
-        return count
             
     def PossibleHands(self,active_players): #Translates hand ranges into a list of possible hands
         Actorcards = self.game.actor.hole
@@ -300,7 +204,7 @@ class EVAgent(PokerPlayer):
         my_position = EVhands.Positiontranslator(my_position,len(self.game.players))
         Facing_player = EVhands.positions[Facing_player]
         Facing_position = EVhands.Positiontranslator(Facing_player,len(self.game.players))
-        if(PreFlop.actions['i'] == 2):
+        if(PreFlop.actions['i'] == 2): #Check for all appropriate ranges from the PreFlop range
             if(my_position == "sb"):
                 if((my_position,"call") in PreFlop.RangeRFI.keys()):
                     CallRange = PreFlop.RangeRFI[my_position,"call"]
@@ -429,7 +333,6 @@ class EVAgent(PokerPlayer):
             L_per += 1 - equity[1]
         W_per = W_per/N
         L_per = L_per/N  
-        # print("W:%",W_per,"L%:",L_per)
         return W_per, L_per
     
     def ObjecttoString(self,card): #Converts cards to strings from Pokerface library
@@ -511,6 +414,97 @@ class EVAgent(PokerPlayer):
         
         new_card = rank + suit
         return new_card
+    
+### These functions are currently not used by the EVagent but provide as a
+### stepping stone for developing a betting/raise strategy for the EVagent
+    
+    def HandEliminator(self): #The idea behind this function would be to narrow down ranges for post-flop play. This Function is not used
+        for i,player in enumerate(self.game.players):
+            if(player.is_active() and player != self.game.actor):
+                possible_hands = []
+                for i in EVhands.possible_hands[i]:
+                    cards = []
+                    cards2 = []
+                    cards.append(i[0])
+                    cards.append(i[1])
+                    cards2.append(i[0])
+                    cards2.append(i[1])
+                    for card in self.game.board:
+                        new_card = self.ObjecttoString(card)
+                        cards.append(new_card)
+                    hand = [eval7.Card(s) for s in cards]
+                    OpHand = eval7.evaluate(hand)
+                    HandType = eval7.handtype(OpHand)
+                    draw_type = self.StraightDraw(cards)
+                    FlushCount = self.FlushDraw(cards)
+                    if(len(self.game.board) == 3): #What hands would the opp continue with on the flop?
+                        if(HandType == "Pair" or HandType == "Two Pair" or HandType == "Trips" or HandType == "Straight" or HandType == "Flush" or HandType == "Full House" or HandType == "Straight Flush" or FlushCount >= 3 or draw_type > 0):
+                            print(HandType)
+                            print(cards2)
+                            #possible_hands.append(cards2)
+                    if(len(self.game.board) == 4): #What hands would the opp continue with on the turn?
+                        if(HandType == "Pair"):
+                            print(HandType)
+                            print(cards2)
+                    if(len(self.game.board) == 5): #What hands would the opp call with on river?
+                        if(HandType == "Pair"):
+                            print(HandType)
+                #Save all possible hands that call to key
+                #EVhands.possible_hands[i] = possible_hands
+        return
+
+    def StraightDraw(self, cards): #This function is not used but would be able to check for possible straights on future streets
+        ranking = []
+        draw_type = 0 # No draw
+        for card in cards:
+            rank = self.StraightRank(card[0])
+            ranking.append(rank)
+        minimum = [12,0,1,2,3,4,5,6,7,8]
+        maximum = [3,4,5,6,7,8,9,10,11,12]
+        max_count = 0
+        for i in range(len(minimum)):
+            count = 0
+            for j in range(minimum[i],maximum[i]+1):
+                for k in ranking:
+                    if(j == k):
+                        count += 1
+                if(count > max_count):
+                    max_count = count
+        if(max_count == 2 and len(ranking) == 6):
+            count = 0
+            for i in range(len(ranking)-1):
+                if(ranking[i] == ranking[i+1]-1):
+                    count += 1
+            if(count == 3):
+                draw_type = 3 # Double ended straight draw
+        if(max_count == 3):
+            for i in range(1,len(ranking)-2):
+                if(ranking[i] == ranking[i+1]-1 and ranking[i+1] == ranking[i+2]-1 and ranking[i] == ranking[i-1]+2 and ranking[i+2] == ranking[i+3]-2):
+                    draw_type = 3 #Double ended straight draw
+                elif(ranking[i] == ranking[i+1]-1 and ranking[i+1] == ranking[i+2]-1 and (ranking[i] == ranking[i-1]+1 or ranking[i+2] == ranking[i+3]-1)):
+                    draw_type = 1 #Gutshot straight draw
+        if(max_count == 4):
+            ranking.sort()
+            for i in range(len(ranking)-2): #Does not include double end 1 - 3 - 1 or 2 - 2 - 2
+                if(ranking[i] == ranking[i+1]-1 and ranking[i+1] == ranking[i+2]-1 and ranking[i+2] != 12):
+                    draw_type = 4 #Open ended straight draw
+                else:
+                    draw_type = 2 #Inside straight draw
+                
+        return draw_type
+    
+    def FlushDraw(self, cards): #This function is not used but would be used to check for possible flushes on future streets
+        suits = []
+        for card in cards:
+            suit = self.FlushRank(card[1])
+            suits.append(suit)
+        count = 0
+        for i in range(4):
+            if(suits.count(i) > count):
+                count = suits.count(i)
+        return count    
+    
+    
     
     def StraightRank(self,card): #Used to determine straight draws
         if card == "A":
