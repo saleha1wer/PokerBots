@@ -16,7 +16,7 @@ A implementation of 3 poker agents
 * To initiate a Random Agent, Call Agent, Shallow-MCTS Agent or an EV Agent:
 <br />
 <br />
-from shallow_mcts import ShallowMCTS
+`from shallow_mcts import ShallowMCTS
 from random_agent import RandomAgent
 from ev_agent import EVAgent
 from callbot_agent imoort CallbotAgent
@@ -29,7 +29,7 @@ nls = NoLimitShortDeckHoldEm(stakes, starting_stacks)
 ra = RandomAgent(nls) # initiate random agent
 smcts = ShallowMCTS(nls) # initiate sMCTS agent
 ev = EVAgent(nls)  # initiate EV agent
-cb = CallbotAgent(nls) # initiate call-bot agent
+cb = CallbotAgent(nls) # initiate call-bot agent`
 <br />
 <br />
 
