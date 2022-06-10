@@ -48,3 +48,24 @@ net_agent = NetworkAgent(nls,network,0) # initiate network agent
 network.initialize_network()
 net_agent = NetworkAgent(nls,network,1) # initiate network agent
 ```
+* To train a network agent: 
+```
+  max_n_opp = 1 # -- > number of opponents
+
+  policy_network = Network([(7),(max_n_opp*2)],5)
+  # policy_network.initialize_network() --> uncomment this and comment the next line to train a network from scratch
+  # use last network as initial network
+  policy_network.network = keras.models.load_model('policy_network/saved_models/max_1_opp/trained_EVandRandom/final.tf')
+  
+  opp = 'EV' # --> opponenet to train against. Can be 'random' or 'EV'. If max_n_opp > 1, the rest of the opponents are random agents.
+  total = 10 # -->  Number of games in every training run
+  max_rounds = 35 # -->  max round per game
+  m_p=True # -->  whether to use multiprocessing or not
+  buffer_size = 1000
+  sample_size = 500 # -->  size of sample from buffer for network training 
+  new_policy_network = policy_network_self_play(policy_network,max_n_opp,total=total,max_rounds=max_rounds,
+                                              opp=opp,m_p=m_p,buffer_size=buffer_size,sample_size=sample_size)
+
+  new_policy_network.save_network('max_1_opp/new_final')  # --> save new network
+
+```
