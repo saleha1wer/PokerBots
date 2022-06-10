@@ -16,15 +16,15 @@ A implementation of 3 poker agents
 * To initiate a Random Agent, Call Agent, Shallow-MCTS Agent or an EV Agent:
 <br />
 <br />
-`from shallow_mcts import ShallowMCTS
-from random_agent import RandomAgent
-from ev_agent import EVAgent
-from callbot_agent imoort CallbotAgent
+`from shallow_mcts import ShallowMCTS`
+`from random_agent import RandomAgent`
+`from ev_agent import EVAgent`
+`from callbot_agent imoort CallbotAgent`
 
-from pokerface import Stakes,NoLimitTexasHoldEm
-stakes = Stakes(0, (1, 2))
-starting_stacks = 200, 200, 200,200
-nls = NoLimitShortDeckHoldEm(stakes, starting_stacks)
+`from pokerface import Stakes,NoLimitTexasHoldEm`
+`stakes = Stakes(0, (1, 2))`
+`starting_stacks = 200, 200, 200,200`
+`nls = NoLimitShortDeckHoldEm(stakes, starting_stacks)`
 
 ra = RandomAgent(nls) # initiate random agent
 smcts = ShallowMCTS(nls) # initiate sMCTS agent
