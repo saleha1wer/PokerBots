@@ -1,10 +1,18 @@
 
+from logging import exception
+from policy_network.ev_agent import EVAgent
 from policy_network.network import Network
 from policy_network.utils.game2array import game2array
 import numpy as np 
-from pokerface import Stakes, NoLimitShortDeckHoldEm,NoLimitTexasHoldEm
+from pokerface import Evaluator, Stakes, NoLimitShortDeckHoldEm,NoLimitTexasHoldEm
 from policy_network.utils.nn_game import play_game
 from policy_network.network_agent import NetworkAgent
+from policy_network.utils.buffer import Buffer
+import EVhands
+import os
+import multiprocessing as mp
+from policy_network.random_agent import RandomAgent
+import keras
 """
 1. Generate 2000 random networks
 2. Initialize empty set of hall of fame
@@ -49,9 +57,9 @@ def chunks(lst, n):
         yield lst[i:i + n]
 
 
-def simulate_game(players):
+def simulate_game(players, max_rounds=25):
     # play game with the list of players
-    # save game arrays and network output of each player at each stage of the game
+    # save game arrays and action distribution of each player at each stage of the game
     # return the game arrays of the winner and the network outputs, also winner id
     button = 0
     no_players = len(players)
@@ -61,16 +69,25 @@ def simulate_game(players):
         stakes = Stakes(0, {button + 1: 1, button + 2: 2})
     starting_stacks =[200 for i in range(len(players))]
     starting_stacks = tuple(starting_stacks)
-
     game = NoLimitTexasHoldEm(stakes,starting_stacks)
     temp_players = players
     players = []
     for p in temp_players:
-        net = p.network
         p_id = p.id
-        new_p = NetworkAgent(game,net,p_id)
+        if isinstance(p,NetworkAgent):
+            net = p.network
+            new_p = NetworkAgent(game,net,p_id,200)
+        elif isinstance(p,EVAgent):
+            new_p = EVAgent(game,p_id)
+        elif isinstance(p,RandomAgent):
+            new_p = RandomAgent(game,p_id)
         players.append(new_p)
-    game_info,opp_info,act_dis, winner_id = play_game(players,game,starting_stacks,button,max_rounds=25)
+    
+    ranges = [100 for i in range(len(players))]
+    for i in range(len(ranges)):
+        EVhands.player_range[i] = ranges[i]
+
+    game_info,opp_info,act_dis, winner_id = play_game(players,game,starting_stacks,button,max_rounds=max_rounds)
     return game_info,opp_info,act_dis, winner_id
 
 def simulate_games(n_games, players):
@@ -129,25 +146,94 @@ def train(arrays_tuple): # --> Policy Network
     policy_network.network.save('policy_network/saved_models/policy_net.tf')
     return policy_network
 
-def policy_network_self_play(policy_network, N=None): # --> Policy Network
-    pass
+
+def temp_func(players,max_rounds):
+    try:
+        game_info,opp_info,act_dis, winner_id = simulate_game(players,max_rounds=max_rounds)
+        print('winner id ', winner_id)
+        return [game_info,opp_info,act_dis,winner_id]
+    except exception as e:
+        print('ERROR, ERROR, ERROR, ERROR, ERROR')
+        print(e)
+        return None
+        
+def policy_network_self_play(policy_network,n_opps, N=None, total=10, buffer_size=1000, sample_size=500,max_rounds=75,m_p=True,opp='EV'): # --> Policy Network
+    """
+    repeat 200 times:
+        6. Play a table (n games) of policy network and 3 random bots and 1 EV bots. (or if max1opp -- > 1 EV bot or random bot)
+            - gather data of winner of every game
+        7. Train policy network on the data
+    """
+    wins = 0
+    runs = 0
+    button = 0
+    buffer = Buffer(buffer_size)
+    stakes = Stakes(0, {button+1: 1, button: 2})
+    starting_stacks =(200,200,200)
+    temp_nls = NoLimitTexasHoldEm(stakes,starting_stacks)
+    players = []
+    net_agent = NetworkAgent(temp_nls,policy_network,0)
+    if opp == 'EV':
+        ev1 = EVAgent(temp_nls,1)
+        players.append(net_agent),players.append(ev1)
+    elif opp == 'random':
+        ra =RandomAgent(temp_nls,1)
+        players.append(net_agent),players.append(ra)
+
+    for i in range(n_opps-1):
+        ra =RandomAgent(temp_nls,i+2) 
+        players.append(ra)
+
+    while runs<200:
+        print('Run ', runs)
+        runs = runs +1
+        wins = 0
+        if m_p: 
+            n_cores = os.cpu_count()
+            # n_cores = os.environ['SLURM_JOB_CPUS_PER_NODE'] # uncomment when running on ALICE
+            pool = mp.Pool(processes=int(n_cores))
+            all_games = pool.starmap(temp_func, [(players,max_rounds) for i in range(total)])
+            for temp in all_games:
+                if temp is not None:
+                    buffer.add_to_buffer(tuple(temp[:3]))
+                    if temp[3]==0:
+                        wins+=1
+        else:
+            for i in range(total):
+                game_info,opp_info,act_dis, winner_id = simulate_game(players,max_rounds=max_rounds)
+                if winner_id == 0:
+                    wins += 1
+                print('winner id ', winner_id)
+                buffer.add_to_buffer((game_info,opp_info,act_dis))
+        print(total, ' games finished. PN-agent wins: ', wins)
+        game_info,opp_info,act_dis = buffer.get_from_buffer(sample_size)
+        players[0].network.train_network(game_info,opp_info,act_dis,5,batch_size =4)
+
+        if runs % 10 == 0 or runs ==1:
+            players[0].network.save_network('max_4_opp/run'+str(runs+20))
+    return players[0].network
 
 def main():
-    games_matrix, opp_matrix,act_dis_matrix, hall_of_fame = gather_initial(1000)
-    policy_network = train((games_matrix, opp_matrix,act_dis_matrix))
+    # games_matrix, opp_matrix,act_dis_matrix, hall_of_fame = gather_initial(1000)
+    # policy_network = train((games_matrix, opp_matrix,act_dis_matrix))
     # test policy network, save plots, save network 
-    new_policy_network = policy_network_self_play(policy_network)
-    # test policy network, save plots, save network 
+    max_n_opp = 1 
+    # max_n_opp = 4
+    policy_network = Network([(7),(max_n_opp*2)],5)
+    # policy_network.initialize_network()
+    policy_network.network = keras.models.load_model('policy_network/saved_models/max_1_opp/trained_EVandRandom/final.tf')
+    opp = 'EV'
+    total = 10
+    max_rounds = 35
+    m_p=True
+    buffer_size = 1000
+    sample_size = 500
+    new_policy_network = policy_network_self_play(policy_network,max_n_opp,total=total,max_rounds=max_rounds,
+                                                opp=opp,m_p=m_p,buffer_size=buffer_size,sample_size=sample_size)
+    new_policy_network.save_network('max_4_opp/final')
 
-
-games_matrix, opp_matrix,act_dis_matrix, hall_of_fame = gather_initial(100)
-print(act_dis_matrix)
-save_hof(hall_of_fame)
-policy_network = Network([(7),(8)],5)
-policy_network.initialize_network()
-policy_network.train_network(games_matrix,opp_matrix,act_dis_matrix,50)
-policy_network.network.save('policy_network/saved_models/policy_net.tf')
-
+if __name__ == '__main__':
+    main()
 
 
 

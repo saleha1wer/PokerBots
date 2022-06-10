@@ -24,8 +24,8 @@ class Buffer():
         opponent_array = np.array([i[1] for i in batch])
         act_dis  = np.array([i[2] for i in batch])
 
-        print('got form buffer game arrays: ',game_array.shape)
-        print('got form buffer opponent arrays: ',opponent_array.shape)
+        print('got from buffer game arrays: ',game_array.shape)
+        print('got from buffer opponent arrays: ',opponent_array.shape)
         return game_array,opponent_array,act_dis
 
     def set_len(self, new_len):

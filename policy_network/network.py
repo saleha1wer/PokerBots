@@ -27,14 +27,14 @@ class Network:
         conc = Concatenate()([full_3,full_1])
         full_4 = Dense(20)(conc)
         out = Dense(self.out_shape-1, activation='softmax',name='action_dis')(full_4)
-        out1 = Dense(1, activation='softmax',name='bet_amount')(full_4)
+        out1 = Dense(1,name='bet_amount')(full_4)
         network = Model(inputs=[inp_one,inp_two], outputs =[out,out1], name='Features2ActDis')
         network.compile(
-            loss = ['categorical_crossentropy'],
+            loss = ['categorical_crossentropy', 'mean_squared_error'],
             optimizer = tf.keras.optimizers.Adam(),
             )
         self.network = network
-        print(network.summary())
+        # print(network.summary())
 
     def _read_data(self,game_info,opponent_info,action_ds):
         # game_info = ... # Array of shape (N, num_features)
@@ -54,16 +54,16 @@ class Network:
         y_action_test, y_bet_test =  y_test[:,:4],y_test[:,4]
         return X_train_gi,X_test_gi,X_train_oi,X_test_oi, y_action_train,y_bet_train,y_action_test, y_bet_test
         
-    def train_network(self, game_array,opponent_array,y,epochs):
+    def train_network(self, game_array,opponent_array,y,epochs,batch_size):
         X_train_game,X_test_game,X_train_opponents,X_test_opponents,y_action_train,y_bet_train,y_action_test, y_bet_test = self._read_data(game_array,opponent_array,y)
         self.network.fit(
             x = [X_train_game,X_train_opponents],
             y = [y_action_train,y_bet_train],
             validation_data = ([X_test_game,X_test_opponents], [y_action_test,y_bet_test]),
             epochs = epochs,
-            batch_size=64
+            batch_size=batch_size
         )
 
     def save_network(self,name):
-        self.network.save('saved_models/{}.tf'.format(name))
+        self.network.save('policy_network/saved_models/{}.tf'.format(name))
 
