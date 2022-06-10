@@ -32,4 +32,19 @@ ev = EVAgent(nls)  # initiate EV agent
 cb = CallbotAgent(nls) # initiate call-bot agent
 ```
 * To initiate a Network Agent:
-*
+```
+from policy_network.network import Network
+from policy_network.network_agent import NetworkAgent
+import keras
+
+max_opp = 4 #maximum number of opponents that can be encoded by the network
+network = Network([(7),(2*max_opp)],5)
+# to use a specific network: 
+network_path = 'policy_network/saved_models/max_4_opp/final.tf'
+model = keras.models.load_model(network_path)
+network.network = model
+net_agent = NetworkAgent(nls,network,0) # initiate network agent
+# to initialize random network: 
+network.initialize_network()
+net_agent = NetworkAgent(nls,network,0) # initiate network agent
+```
